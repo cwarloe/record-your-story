@@ -1,6 +1,6 @@
-# Record Your Story Project Repository
+# Record Your Story 
 
-This repository contains all the documentation and related files for the 'Record Your Story' app project.
+**Record Your Story** is a platform for users to document and organize their life events with timestamps and narratives, enabling them to preserve and share their personal stories.
 
 ## Directory Structure
 
