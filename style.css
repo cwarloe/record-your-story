@@ -1,12 +1,23 @@
 
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;700&display=swap');
+
 body {
-    font-family: Arial, sans-serif;
+    font-family: 'Open Sans', sans-serif;
+    background-color: #f8f8f8;
+    color: #333;
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
-header, nav, main, footer {
+header {
+    background-color: #6c5b7b; /* Deep purple */
+    color: white;
+    text-align: center;
+    padding: 20px;
+}
+
+nav {
     text-align: center;
     padding: 20px;
 }
@@ -14,6 +25,8 @@ header, nav, main, footer {
 nav ul {
     list-style: none;
     padding: 0;
+    display: flex;
+    justify-content: center;
 }
 
 nav ul li {
@@ -21,9 +34,9 @@ nav ul li {
     margin: 0 10px;
 }
 
-nav a {
+nav ul li a {
     text-decoration: none;
-    color: #333;
+    color: #355c7d; /* Dark blue */
 }
 
 #banner {
@@ -35,8 +48,18 @@ nav a {
 
 article {
     margin: 20px 0;
+    text-align: center;
 }
 
 footer {
-    background-color: #f3f3f3;
+    background-color: #355c7d;
+    color: white;
+    text-align: center;
+    padding: 20px;
+}
+
+@media screen and (max-width: 768px) {
+    nav ul {
+        flex-direction: column;
+    }
 }
