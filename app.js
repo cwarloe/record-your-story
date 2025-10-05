@@ -12,13 +12,15 @@ class StoryTimeline {
         this.currentPhotos = [];
         this.lightboxPhotos = [];
         this.currentLightboxIndex = 0;
+        this.db = null;
         this.init();
     }
 
-    init() {
+    async init() {
+        await this.initDB();
         this.initQuill();
         this.initTheme();
-        this.renderTimeline();
+        await this.renderTimeline();
         this.attachEventListeners();
     }
 
@@ -70,41 +72,124 @@ class StoryTimeline {
     }
 
     // Event Management
-    addEvent(title, date, description, photos = []) {
+    async addEvent(title, date, description, photos = []) {
         const event = {
             id: Date.now().toString(),
             title,
             date,
             description,
-            photos,
             createdAt: new Date().toISOString()
         };
         this.events.push(event);
         this.saveEvents();
-        this.renderTimeline();
+
+        // Save photos separately in IndexedDB
+        if (photos.length > 0) {
+            await this.savePhotos(event.id, photos);
+        }
+
+        await this.renderTimeline();
         return event;
     }
 
-    updateEvent(id, title, date, description, photos = []) {
+    async updateEvent(id, title, date, description, photos = []) {
         const index = this.events.findIndex(e => e.id === id);
         if (index !== -1) {
             this.events[index] = {
                 ...this.events[index],
                 title,
                 date,
-                description,
-                photos
+                description
             };
             this.saveEvents();
-            this.renderTimeline();
+
+            // Update photos in IndexedDB
+            if (photos.length > 0) {
+                await this.savePhotos(id, photos);
+            } else {
+                await this.deletePhotos(id);
+            }
+
+            await this.renderTimeline();
         }
     }
 
-    deleteEvent(id) {
+    // IndexedDB for photos
+    initDB() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open('StoryTimelineDB', 1);
+
+            request.onerror = () => {
+                console.error('IndexedDB failed to open');
+                reject(request.error);
+            };
+
+            request.onsuccess = () => {
+                this.db = request.result;
+                resolve();
+            };
+
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                if (!db.objectStoreNames.contains('photos')) {
+                    db.createObjectStore('photos', { keyPath: 'id' });
+                }
+            };
+        });
+    }
+
+    async savePhotos(eventId, photos) {
+        if (!this.db || !photos || photos.length === 0) return;
+
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction(['photos'], 'readwrite');
+            const store = transaction.objectStore('photos');
+
+            store.put({ id: eventId, photos: photos });
+
+            transaction.oncomplete = () => resolve();
+            transaction.onerror = () => reject(transaction.error);
+        });
+    }
+
+    async getPhotos(eventId) {
+        if (!this.db) return [];
+
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction(['photos'], 'readonly');
+            const store = transaction.objectStore('photos');
+            const request = store.get(eventId);
+
+            request.onsuccess = () => {
+                resolve(request.result ? request.result.photos : []);
+            };
+
+            request.onerror = () => {
+                console.error('Error getting photos:', request.error);
+                resolve([]);
+            };
+        });
+    }
+
+    async deletePhotos(eventId) {
+        if (!this.db) return;
+
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction(['photos'], 'readwrite');
+            const store = transaction.objectStore('photos');
+            store.delete(eventId);
+
+            transaction.oncomplete = () => resolve();
+            transaction.onerror = () => reject(transaction.error);
+        });
+    }
+
+    async deleteEvent(id) {
         if (confirm('Are you sure you want to delete this event?')) {
             this.events = this.events.filter(e => e.id !== id);
             this.saveEvents();
-            this.renderTimeline();
+            await this.deletePhotos(id);
+            await this.renderTimeline();
         }
     }
 
@@ -156,7 +241,7 @@ class StoryTimeline {
     }
 
     // UI Rendering
-    renderTimeline() {
+    async renderTimeline() {
         const container = document.getElementById('timeline-container');
 
         if (this.events.length === 0) {
@@ -177,7 +262,13 @@ class StoryTimeline {
             return;
         }
 
-        container.innerHTML = sortedEvents.map(event => `
+        // Load photos for all events from IndexedDB
+        const eventsWithPhotos = await Promise.all(sortedEvents.map(async (event) => {
+            const photos = await this.getPhotos(event.id);
+            return { ...event, photos };
+        }));
+
+        container.innerHTML = eventsWithPhotos.map(event => `
             <div class="timeline-event" data-id="${event.id}">
                 <div class="event-date">${this.formatDate(event.date)}</div>
                 <div class="event-content">
@@ -377,7 +468,7 @@ class StoryTimeline {
         }
     }
 
-    startEdit(id) {
+    async startEdit(id) {
         const event = this.events.find(e => e.id === id);
         if (!event) return;
 
@@ -394,8 +485,8 @@ class StoryTimeline {
             }
         }
 
-        // Set photos
-        this.currentPhotos = event.photos || [];
+        // Load photos from IndexedDB
+        this.currentPhotos = await this.getPhotos(id);
         this.renderPhotoPreview();
 
         document.querySelector('#event-form button[type="submit"]').textContent = 'Update Event';
@@ -422,11 +513,11 @@ class StoryTimeline {
     }
 
     // Lightbox
-    openLightbox(eventId, photoIndex) {
-        const event = this.events.find(e => e.id === eventId);
-        if (!event || !event.photos) return;
+    async openLightbox(eventId, photoIndex) {
+        const photos = await this.getPhotos(eventId);
+        if (!photos || photos.length === 0) return;
 
-        this.lightboxPhotos = event.photos;
+        this.lightboxPhotos = photos;
         this.currentLightboxIndex = photoIndex;
         this.showLightboxPhoto();
 
