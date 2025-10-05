@@ -5,12 +5,35 @@ class StoryTimeline {
     constructor() {
         this.events = this.loadEvents();
         this.editingEventId = null;
+        this.searchQuery = '';
+        this.filterFrom = '';
+        this.filterTo = '';
+        this.quill = null;
+        this.currentPhotos = [];
+        this.lightboxPhotos = [];
+        this.currentLightboxIndex = 0;
         this.init();
     }
 
     init() {
+        this.initQuill();
         this.renderTimeline();
         this.attachEventListeners();
+    }
+
+    initQuill() {
+        this.quill = new Quill('#event-description-editor', {
+            theme: 'snow',
+            placeholder: 'Tell your story... (use toolbar to format text)',
+            modules: {
+                toolbar: [
+                    ['bold', 'italic', 'underline'],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    ['link'],
+                    ['clean']
+                ]
+            }
+        });
     }
 
     // LocalStorage Management
@@ -24,12 +47,13 @@ class StoryTimeline {
     }
 
     // Event Management
-    addEvent(title, date, description) {
+    addEvent(title, date, description, photos = []) {
         const event = {
             id: Date.now().toString(),
             title,
             date,
             description,
+            photos,
             createdAt: new Date().toISOString()
         };
         this.events.push(event);
@@ -38,14 +62,15 @@ class StoryTimeline {
         return event;
     }
 
-    updateEvent(id, title, date, description) {
+    updateEvent(id, title, date, description, photos = []) {
         const index = this.events.findIndex(e => e.id === id);
         if (index !== -1) {
             this.events[index] = {
                 ...this.events[index],
                 title,
                 date,
-                description
+                description,
+                photos
             };
             this.saveEvents();
             this.renderTimeline();
@@ -68,26 +93,80 @@ class StoryTimeline {
         }
     }
 
+    // Filtering & Search
+    getFilteredEvents() {
+        let filtered = [...this.events];
+
+        // Apply search filter
+        if (this.searchQuery) {
+            const query = this.searchQuery.toLowerCase();
+            filtered = filtered.filter(event =>
+                event.title.toLowerCase().includes(query) ||
+                (event.description && event.description.toLowerCase().includes(query))
+            );
+        }
+
+        // Apply date range filter
+        if (this.filterFrom) {
+            filtered = filtered.filter(event => event.date >= this.filterFrom);
+        }
+        if (this.filterTo) {
+            filtered = filtered.filter(event => event.date <= this.filterTo);
+        }
+
+        return filtered;
+    }
+
+    updateSearchResultsInfo() {
+        const info = document.getElementById('search-results-info');
+        if (!info) return;
+
+        const filtered = this.getFilteredEvents();
+        const total = this.events.length;
+
+        if (this.searchQuery || this.filterFrom || this.filterTo) {
+            info.textContent = `Showing ${filtered.length} of ${total} events`;
+            info.style.display = 'block';
+        } else {
+            info.style.display = 'none';
+        }
+    }
+
     // UI Rendering
     renderTimeline() {
         const container = document.getElementById('timeline-container');
 
         if (this.events.length === 0) {
             container.innerHTML = '<p class="empty-state">No events yet. Add your first life event above!</p>';
+            this.updateSearchResultsInfo();
             return;
         }
 
-        // Sort events by date (newest first)
-        const sortedEvents = [...this.events].sort((a, b) =>
+        // Get filtered and sorted events
+        const filteredEvents = this.getFilteredEvents();
+        const sortedEvents = filteredEvents.sort((a, b) =>
             new Date(b.date) - new Date(a.date)
         );
+
+        if (sortedEvents.length === 0) {
+            container.innerHTML = '<p class="empty-state">No events match your search or filter criteria.</p>';
+            this.updateSearchResultsInfo();
+            return;
+        }
 
         container.innerHTML = sortedEvents.map(event => `
             <div class="timeline-event" data-id="${event.id}">
                 <div class="event-date">${this.formatDate(event.date)}</div>
                 <div class="event-content">
                     <h3>${this.escapeHtml(event.title)}</h3>
-                    ${event.description ? `<p>${this.escapeHtml(event.description)}</p>` : ''}
+                    ${event.description ? `<div class="event-description">${event.description}</div>` : ''}
+                    ${event.photos && event.photos.length > 0 ? `
+                        <div class="event-photos">
+                            ${event.photos.map((photo, idx) => `
+                                <img src="${photo}" alt="Event photo ${idx + 1}" class="event-photo" data-event-id="${event.id}" data-photo-index="${idx}">
+                            `).join('')}
+                        </div>
+                    ` : ''}
                     <div class="event-actions">
                         <button class="btn-small btn-edit" data-id="${event.id}">Edit</button>
                         <button class="btn-small btn-delete" data-id="${event.id}">Delete</button>
@@ -97,6 +176,7 @@ class StoryTimeline {
         `).join('');
 
         this.attachTimelineListeners();
+        this.updateSearchResultsInfo();
     }
 
     // Event Listeners
@@ -108,6 +188,16 @@ class StoryTimeline {
         const clearAllBtn = document.getElementById('clear-all-btn');
         const cancelBtn = document.getElementById('cancel-btn');
 
+        // Search & Filter
+        const searchInput = document.getElementById('search-input');
+        const filterFrom = document.getElementById('filter-from');
+        const filterTo = document.getElementById('filter-to');
+        const clearFilterBtn = document.getElementById('clear-filter-btn');
+
+        // Photo upload
+        const photoInput = document.getElementById('event-photos');
+        photoInput.addEventListener('change', (e) => this.handlePhotoSelect(e));
+
         form.addEventListener('submit', (e) => {
             e.preventDefault();
             this.handleFormSubmit();
@@ -118,11 +208,43 @@ class StoryTimeline {
         importFile.addEventListener('change', (e) => this.importData(e));
         clearAllBtn.addEventListener('click', () => this.clearAllEvents());
         cancelBtn.addEventListener('click', () => this.cancelEdit());
+
+        // Search with debounce
+        let searchTimeout;
+        searchInput.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                this.searchQuery = e.target.value;
+                this.renderTimeline();
+            }, 300);
+        });
+
+        // Date filters
+        filterFrom.addEventListener('change', (e) => {
+            this.filterFrom = e.target.value;
+            this.renderTimeline();
+        });
+
+        filterTo.addEventListener('change', (e) => {
+            this.filterTo = e.target.value;
+            this.renderTimeline();
+        });
+
+        clearFilterBtn.addEventListener('click', () => {
+            this.searchQuery = '';
+            this.filterFrom = '';
+            this.filterTo = '';
+            searchInput.value = '';
+            filterFrom.value = '';
+            filterTo.value = '';
+            this.renderTimeline();
+        });
     }
 
     attachTimelineListeners() {
         const editButtons = document.querySelectorAll('.btn-edit');
         const deleteButtons = document.querySelectorAll('.btn-delete');
+        const photoElements = document.querySelectorAll('.event-photo');
 
         editButtons.forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -137,21 +259,75 @@ class StoryTimeline {
                 this.deleteEvent(id);
             });
         });
+
+        photoElements.forEach(photo => {
+            photo.addEventListener('click', (e) => {
+                const eventId = e.target.dataset.eventId;
+                const photoIndex = parseInt(e.target.dataset.photoIndex);
+                this.openLightbox(eventId, photoIndex);
+            });
+        });
+    }
+
+    // Photo Handling
+    async handlePhotoSelect(e) {
+        const files = Array.from(e.target.files).slice(0, 5); // Max 5 photos
+        this.currentPhotos = [];
+
+        for (const file of files) {
+            const base64 = await this.fileToBase64(file);
+            this.currentPhotos.push(base64);
+        }
+
+        this.renderPhotoPreview();
+    }
+
+    fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+
+    renderPhotoPreview() {
+        const preview = document.getElementById('photo-preview');
+        if (this.currentPhotos.length === 0) {
+            preview.innerHTML = '';
+            return;
+        }
+
+        preview.innerHTML = this.currentPhotos.map((photo, idx) => `
+            <div class="preview-photo">
+                <img src="${photo}" alt="Preview ${idx + 1}">
+                <button type="button" class="remove-photo" data-index="${idx}">&times;</button>
+            </div>
+        `).join('');
+
+        // Attach remove handlers
+        preview.querySelectorAll('.remove-photo').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const index = parseInt(e.target.dataset.index);
+                this.currentPhotos.splice(index, 1);
+                this.renderPhotoPreview();
+            });
+        });
     }
 
     // Form Handling
     handleFormSubmit() {
         const title = document.getElementById('event-title').value.trim();
         const date = document.getElementById('event-date').value;
-        const description = document.getElementById('event-description').value.trim();
+        const description = this.quill.root.innerHTML;
 
         if (!title || !date) return;
 
         if (this.editingEventId) {
-            this.updateEvent(this.editingEventId, title, date, description);
+            this.updateEvent(this.editingEventId, title, date, description, this.currentPhotos);
             this.cancelEdit();
         } else {
-            this.addEvent(title, date, description);
+            this.addEvent(title, date, description, this.currentPhotos);
         }
 
         this.resetForm();
@@ -164,7 +340,17 @@ class StoryTimeline {
         this.editingEventId = id;
         document.getElementById('event-title').value = event.title;
         document.getElementById('event-date').value = event.date;
-        document.getElementById('event-description').value = event.description || '';
+
+        // Set Quill content
+        if (event.description) {
+            this.quill.root.innerHTML = event.description;
+        } else {
+            this.quill.setText('');
+        }
+
+        // Set photos
+        this.currentPhotos = event.photos || [];
+        this.renderPhotoPreview();
 
         document.querySelector('#event-form button[type="submit"]').textContent = 'Update Event';
         document.getElementById('cancel-btn').style.display = 'inline-block';
@@ -182,6 +368,51 @@ class StoryTimeline {
 
     resetForm() {
         document.getElementById('event-form').reset();
+        this.quill.setText('');
+        this.currentPhotos = [];
+        this.renderPhotoPreview();
+    }
+
+    // Lightbox
+    openLightbox(eventId, photoIndex) {
+        const event = this.events.find(e => e.id === eventId);
+        if (!event || !event.photos) return;
+
+        this.lightboxPhotos = event.photos;
+        this.currentLightboxIndex = photoIndex;
+        this.showLightboxPhoto();
+
+        const lightbox = document.getElementById('photo-lightbox');
+        lightbox.style.display = 'flex';
+
+        // Add event listeners
+        document.querySelector('.lightbox-close').onclick = () => this.closeLightbox();
+        document.querySelector('.lightbox-prev').onclick = () => this.prevLightboxPhoto();
+        document.querySelector('.lightbox-next').onclick = () => this.nextLightboxPhoto();
+
+        // Close on outside click
+        lightbox.onclick = (e) => {
+            if (e.target === lightbox) this.closeLightbox();
+        };
+    }
+
+    closeLightbox() {
+        document.getElementById('photo-lightbox').style.display = 'none';
+    }
+
+    showLightboxPhoto() {
+        const img = document.getElementById('lightbox-img');
+        img.src = this.lightboxPhotos[this.currentLightboxIndex];
+    }
+
+    prevLightboxPhoto() {
+        this.currentLightboxIndex = (this.currentLightboxIndex - 1 + this.lightboxPhotos.length) % this.lightboxPhotos.length;
+        this.showLightboxPhoto();
+    }
+
+    nextLightboxPhoto() {
+        this.currentLightboxIndex = (this.currentLightboxIndex + 1) % this.lightboxPhotos.length;
+        this.showLightboxPhoto();
     }
 
     // Import/Export

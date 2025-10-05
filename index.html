@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Record Your Story</title>
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -29,7 +30,13 @@
                     </div>
                     <div class="form-group">
                         <label for="event-description">Description</label>
-                        <textarea id="event-description" rows="4" placeholder="Tell your story..."></textarea>
+                        <div id="event-description-editor"></div>
+                        <input type="hidden" id="event-description">
+                    </div>
+                    <div class="form-group">
+                        <label for="event-photos">Photos (up to 5)</label>
+                        <input type="file" id="event-photos" accept="image/*" multiple>
+                        <div id="photo-preview" class="photo-preview"></div>
                     </div>
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary">Add Event</button>
@@ -49,6 +56,23 @@
             <!-- Timeline Display -->
             <section id="timeline-section">
                 <h2>Your Timeline</h2>
+
+                <!-- Search & Filter -->
+                <div id="search-filter-section">
+                    <div class="search-box">
+                        <input type="text" id="search-input" placeholder="Search events..." />
+                        <span class="search-icon">🔍</span>
+                    </div>
+                    <div class="filter-box">
+                        <label for="filter-from">From:</label>
+                        <input type="date" id="filter-from" />
+                        <label for="filter-to">To:</label>
+                        <input type="date" id="filter-to" />
+                        <button class="btn-small btn-clear-filter" id="clear-filter-btn">Clear</button>
+                    </div>
+                    <div id="search-results-info"></div>
+                </div>
+
                 <div id="timeline-container">
                     <p class="empty-state">No events yet. Add your first life event above!</p>
                 </div>
@@ -60,6 +84,17 @@
         <p>&copy; 2024 Record Your Story | All data stored locally in your browser</p>
     </footer>
 
+    <!-- Photo Lightbox Modal -->
+    <div id="photo-lightbox" class="lightbox" style="display: none;">
+        <span class="lightbox-close">&times;</span>
+        <img class="lightbox-content" id="lightbox-img">
+        <div class="lightbox-nav">
+            <button class="lightbox-prev">&#10094;</button>
+            <button class="lightbox-next">&#10095;</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

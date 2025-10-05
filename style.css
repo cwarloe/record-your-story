@@ -190,6 +190,89 @@ main {
     margin-bottom: 20px;
 }
 
+/* Search & Filter Section */
+#search-filter-section {
+    margin-bottom: 25px;
+    padding: 20px;
+    background: #f9f9f9;
+    border-radius: 10px;
+}
+
+.search-box {
+    position: relative;
+    margin-bottom: 15px;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 12px 45px 12px 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-family: 'Open Sans', sans-serif;
+    transition: border-color 0.3s;
+}
+
+.search-box input:focus {
+    outline: none;
+    border-color: #6c5b7b;
+}
+
+.search-icon {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.2rem;
+    pointer-events: none;
+}
+
+.filter-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.filter-box label {
+    font-weight: 600;
+    color: #555;
+}
+
+.filter-box input[type="date"] {
+    padding: 8px 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    font-family: 'Open Sans', sans-serif;
+    transition: border-color 0.3s;
+}
+
+.filter-box input[type="date"]:focus {
+    outline: none;
+    border-color: #6c5b7b;
+}
+
+.btn-clear-filter {
+    background-color: #95a5a6;
+    color: white;
+}
+
+.btn-clear-filter:hover {
+    background-color: #7f8c8d;
+}
+
+#search-results-info {
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: #e8f4f8;
+    border-left: 4px solid #3498db;
+    border-radius: 4px;
+    color: #2c3e50;
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: none;
+}
+
 #timeline-container {
     position: relative;
     padding-left: 0;
@@ -238,6 +321,173 @@ main {
     margin: 0 0 15px 0;
     color: #666;
     line-height: 1.6;
+}
+
+.event-description {
+    margin: 0 0 15px 0;
+    color: #666;
+    line-height: 1.6;
+}
+
+.event-description p {
+    margin: 0 0 10px 0;
+}
+
+.event-description ul,
+.event-description ol {
+    margin: 10px 0;
+    padding-left: 25px;
+}
+
+.event-description a {
+    color: #3498db;
+    text-decoration: underline;
+}
+
+.event-description strong {
+    font-weight: 700;
+}
+
+.event-description em {
+    font-style: italic;
+}
+
+/* Photo Upload & Preview */
+#event-photos {
+    padding: 10px;
+    border: 2px dashed #e0e0e0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color 0.3s;
+}
+
+#event-photos:hover {
+    border-color: #6c5b7b;
+}
+
+.photo-preview {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+    flex-wrap: wrap;
+}
+
+.preview-photo {
+    position: relative;
+    width: 100px;
+    height: 100px;
+}
+
+.preview-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.remove-photo {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.remove-photo:hover {
+    background: #c0392b;
+}
+
+/* Event Photos Display */
+.event-photos {
+    display: flex;
+    gap: 8px;
+    margin: 15px 0;
+    flex-wrap: wrap;
+}
+
+.event-photo {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.event-photo:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* Lightbox */
+.lightbox {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.9);
+    align-items: center;
+    justify-content: center;
+}
+
+.lightbox-content {
+    max-width: 90%;
+    max-height: 90%;
+    object-fit: contain;
+}
+
+.lightbox-close {
+    position: absolute;
+    top: 20px;
+    right: 35px;
+    color: white;
+    font-size: 40px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.lightbox-close:hover {
+    color: #bbb;
+}
+
+.lightbox-nav {
+    position: absolute;
+    top: 50%;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 20px;
+    transform: translateY(-50%);
+}
+
+.lightbox-prev,
+.lightbox-next {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border: none;
+    padding: 15px 20px;
+    font-size: 24px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.3s;
+}
+
+.lightbox-prev:hover,
+.lightbox-next:hover {
+    background: rgba(255,255,255,0.4);
 }
 
 .event-actions {
