@@ -386,6 +386,89 @@ main {
     color: var(--text-primary);
 }
 
+/* Tags */
+.tags-display,
+.event-tags {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 10px 0;
+}
+
+.tag-badge,
+.tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    background: linear-gradient(135deg, var(--purple) 0%, var(--blue) 100%);
+    color: white;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.remove-tag {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.2rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+    margin-left: 2px;
+}
+
+.remove-tag:hover {
+    color: #ffcccc;
+}
+
+#tag-filter-section {
+    margin-top: 15px;
+}
+
+#tag-filter-section label {
+    font-weight: 600;
+    color: var(--text-tertiary);
+    display: block;
+    margin-bottom: 8px;
+}
+
+.available-tags {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.filter-tag {
+    padding: 6px 12px;
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    color: var(--text-primary);
+}
+
+.filter-tag:hover {
+    border-color: var(--purple);
+    transform: translateY(-2px);
+}
+
+.filter-tag.active {
+    background: linear-gradient(135deg, var(--purple) 0%, var(--blue) 100%);
+    color: white;
+    border-color: transparent;
+}
+
+.no-tags {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-style: italic;
+}
+
 .event-content p {
     margin: 0 0 15px 0;
     color: var(--text-secondary);

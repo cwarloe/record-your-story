@@ -8,8 +8,10 @@ class StoryTimeline {
         this.searchQuery = '';
         this.filterFrom = '';
         this.filterTo = '';
+        this.filterTags = [];
         this.quill = null;
         this.currentPhotos = [];
+        this.currentTags = [];
         this.lightboxPhotos = [];
         this.currentLightboxIndex = 0;
         this.db = null;
@@ -72,12 +74,13 @@ class StoryTimeline {
     }
 
     // Event Management
-    async addEvent(title, date, description, photos = []) {
+    async addEvent(title, date, description, photos = [], tags = []) {
         const event = {
             id: Date.now().toString(),
             title,
             date,
             description,
+            tags,
             createdAt: new Date().toISOString()
         };
         this.events.push(event);
@@ -92,14 +95,15 @@ class StoryTimeline {
         return event;
     }
 
-    async updateEvent(id, title, date, description, photos = []) {
+    async updateEvent(id, title, date, description, photos = [], tags = []) {
         const index = this.events.findIndex(e => e.id === id);
         if (index !== -1) {
             this.events[index] = {
                 ...this.events[index],
                 title,
                 date,
-                description
+                description,
+                tags
             };
             this.saveEvents();
 
@@ -222,7 +226,25 @@ class StoryTimeline {
             filtered = filtered.filter(event => event.date <= this.filterTo);
         }
 
+        // Apply tag filter
+        if (this.filterTags.length > 0) {
+            filtered = filtered.filter(event =>
+                event.tags && event.tags.some(tag => this.filterTags.includes(tag))
+            );
+        }
+
         return filtered;
+    }
+
+    // Get all unique tags from all events
+    getAllTags() {
+        const tagSet = new Set();
+        this.events.forEach(event => {
+            if (event.tags) {
+                event.tags.forEach(tag => tagSet.add(tag));
+            }
+        });
+        return Array.from(tagSet).sort();
     }
 
     updateSearchResultsInfo() {
@@ -273,6 +295,11 @@ class StoryTimeline {
                 <div class="event-date">${this.formatDate(event.date)}</div>
                 <div class="event-content">
                     <h3>${this.escapeHtml(event.title)}</h3>
+                    ${event.tags && event.tags.length > 0 ? `
+                        <div class="event-tags">
+                            ${event.tags.map(tag => `<span class="tag" data-tag="${tag}">${tag}</span>`).join('')}
+                        </div>
+                    ` : ''}
                     ${event.description ? `<div class="event-description">${event.description}</div>` : ''}
                     ${event.photos && event.photos.length > 0 ? `
                         <div class="event-photos">
@@ -289,8 +316,44 @@ class StoryTimeline {
             </div>
         `).join('');
 
+        this.renderAvailableTags();
+
         this.attachTimelineListeners();
         this.updateSearchResultsInfo();
+    }
+
+    renderAvailableTags() {
+        const allTags = this.getAllTags();
+        const container = document.getElementById('available-tags');
+
+        if (allTags.length === 0) {
+            container.innerHTML = '<p class="no-tags">No tags yet</p>';
+            return;
+        }
+
+        container.innerHTML = allTags.map(tag => `
+            <span class="filter-tag ${this.filterTags.includes(tag) ? 'active' : ''}" data-tag="${tag}">
+                ${tag}
+            </span>
+        `).join('');
+
+        // Add click listeners
+        container.querySelectorAll('.filter-tag').forEach(tagEl => {
+            tagEl.addEventListener('click', () => {
+                const tag = tagEl.dataset.tag;
+                this.toggleTagFilter(tag);
+            });
+        });
+    }
+
+    toggleTagFilter(tag) {
+        const index = this.filterTags.indexOf(tag);
+        if (index > -1) {
+            this.filterTags.splice(index, 1);
+        } else {
+            this.filterTags.push(tag);
+        }
+        this.renderTimeline();
     }
 
     // Event Listeners
@@ -307,6 +370,16 @@ class StoryTimeline {
         const filterFrom = document.getElementById('filter-from');
         const filterTo = document.getElementById('filter-to');
         const clearFilterBtn = document.getElementById('clear-filter-btn');
+
+        // Tags input
+        const tagsInput = document.getElementById('event-tags');
+        tagsInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.addTag(tagsInput.value.trim());
+                tagsInput.value = '';
+            }
+        });
 
         // Photo upload
         const photoInput = document.getElementById('event-photos');
@@ -389,6 +462,44 @@ class StoryTimeline {
         });
     }
 
+    // Tag Management
+    addTag(tagName) {
+        if (!tagName) return;
+
+        const cleanTag = tagName.toLowerCase().replace(/[^a-z0-9-_]/g, '');
+        if (!cleanTag || this.currentTags.includes(cleanTag)) return;
+
+        this.currentTags.push(cleanTag);
+        this.renderTagsDisplay();
+    }
+
+    removeTag(tag) {
+        this.currentTags = this.currentTags.filter(t => t !== tag);
+        this.renderTagsDisplay();
+    }
+
+    renderTagsDisplay() {
+        const display = document.getElementById('tags-display');
+        if (this.currentTags.length === 0) {
+            display.innerHTML = '';
+            return;
+        }
+
+        display.innerHTML = this.currentTags.map(tag => `
+            <span class="tag-badge">
+                ${tag}
+                <button type="button" class="remove-tag" data-tag="${tag}">&times;</button>
+            </span>
+        `).join('');
+
+        // Attach remove handlers
+        display.querySelectorAll('.remove-tag').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                this.removeTag(e.target.dataset.tag);
+            });
+        });
+    }
+
     // Photo Handling
     async handlePhotoSelect(e) {
         const files = Array.from(e.target.files).slice(0, 5); // Max 5 photos
@@ -455,10 +566,10 @@ class StoryTimeline {
             }
 
             if (this.editingEventId) {
-                this.updateEvent(this.editingEventId, title, date, description, this.currentPhotos);
+                this.updateEvent(this.editingEventId, title, date, description, this.currentPhotos, this.currentTags);
                 this.cancelEdit();
             } else {
-                this.addEvent(title, date, description, this.currentPhotos);
+                this.addEvent(title, date, description, this.currentPhotos, this.currentTags);
             }
 
             this.resetForm();
@@ -489,6 +600,10 @@ class StoryTimeline {
         this.currentPhotos = await this.getPhotos(id);
         this.renderPhotoPreview();
 
+        // Load tags
+        this.currentTags = event.tags || [];
+        this.renderTagsDisplay();
+
         document.querySelector('#event-form button[type="submit"]').textContent = 'Update Event';
         document.getElementById('cancel-btn').style.display = 'inline-block';
 
@@ -509,7 +624,9 @@ class StoryTimeline {
             this.quill.setText('');
         }
         this.currentPhotos = [];
+        this.currentTags = [];
         this.renderPhotoPreview();
+        this.renderTagsDisplay();
     }
 
     // Lightbox

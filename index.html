@@ -37,6 +37,11 @@
                         <input type="hidden" id="event-description">
                     </div>
                     <div class="form-group">
+                        <label for="event-tags">Tags (optional)</label>
+                        <input type="text" id="event-tags" placeholder="e.g., work, family, travel (press Enter to add)">
+                        <div id="tags-display" class="tags-display"></div>
+                    </div>
+                    <div class="form-group">
                         <label for="event-photos">Photos (up to 5)</label>
                         <input type="file" id="event-photos" accept="image/*" multiple>
                         <div id="photo-preview" class="photo-preview"></div>
@@ -72,6 +77,10 @@
                         <label for="filter-to">To:</label>
                         <input type="date" id="filter-to" />
                         <button class="btn-small btn-clear-filter" id="clear-filter-btn">Clear</button>
+                    </div>
+                    <div id="tag-filter-section">
+                        <label>Filter by tags:</label>
+                        <div id="available-tags" class="available-tags"></div>
                     </div>
                     <div id="search-results-info"></div>
                 </div>
