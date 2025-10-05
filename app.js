@@ -17,8 +17,31 @@ class StoryTimeline {
 
     init() {
         this.initQuill();
+        this.initTheme();
         this.renderTimeline();
         this.attachEventListeners();
+    }
+
+    initTheme() {
+        // Load saved theme preference
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+            document.body.classList.add('dark-mode');
+            this.updateThemeIcon(true);
+        }
+    }
+
+    toggleTheme() {
+        const isDark = document.body.classList.toggle('dark-mode');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        this.updateThemeIcon(isDark);
+    }
+
+    updateThemeIcon(isDark) {
+        const icon = document.querySelector('.theme-icon');
+        if (icon) {
+            icon.textContent = isDark ? '☀️' : '🌙';
+        }
     }
 
     initQuill() {
@@ -198,6 +221,12 @@ class StoryTimeline {
         const photoInput = document.getElementById('event-photos');
         photoInput.addEventListener('change', (e) => this.handlePhotoSelect(e));
 
+        // Theme toggle
+        const themeToggle = document.getElementById('theme-toggle');
+        if (themeToggle) {
+            themeToggle.addEventListener('click', () => this.toggleTheme());
+        }
+
         form.addEventListener('submit', (e) => {
             e.preventDefault();
             this.handleFormSubmit();
@@ -317,20 +346,35 @@ class StoryTimeline {
 
     // Form Handling
     handleFormSubmit() {
-        const title = document.getElementById('event-title').value.trim();
-        const date = document.getElementById('event-date').value;
-        const description = this.quill.root.innerHTML;
+        try {
+            const title = document.getElementById('event-title').value.trim();
+            const date = document.getElementById('event-date').value;
 
-        if (!title || !date) return;
+            // Safely get description - fallback to empty string if Quill isn't loaded
+            let description = '';
+            if (this.quill && this.quill.root) {
+                description = this.quill.root.innerHTML;
+            } else {
+                console.warn('Quill editor not initialized, using plain text fallback');
+            }
 
-        if (this.editingEventId) {
-            this.updateEvent(this.editingEventId, title, date, description, this.currentPhotos);
-            this.cancelEdit();
-        } else {
-            this.addEvent(title, date, description, this.currentPhotos);
+            if (!title || !date) {
+                alert('Please fill in both title and date');
+                return;
+            }
+
+            if (this.editingEventId) {
+                this.updateEvent(this.editingEventId, title, date, description, this.currentPhotos);
+                this.cancelEdit();
+            } else {
+                this.addEvent(title, date, description, this.currentPhotos);
+            }
+
+            this.resetForm();
+        } catch (error) {
+            console.error('Error submitting form:', error);
+            alert('There was an error adding the event. Please check the console for details.');
         }
-
-        this.resetForm();
     }
 
     startEdit(id) {
@@ -342,10 +386,12 @@ class StoryTimeline {
         document.getElementById('event-date').value = event.date;
 
         // Set Quill content
-        if (event.description) {
-            this.quill.root.innerHTML = event.description;
-        } else {
-            this.quill.setText('');
+        if (this.quill && this.quill.root) {
+            if (event.description) {
+                this.quill.root.innerHTML = event.description;
+            } else {
+                this.quill.setText('');
+            }
         }
 
         // Set photos
@@ -368,7 +414,9 @@ class StoryTimeline {
 
     resetForm() {
         document.getElementById('event-form').reset();
-        this.quill.setText('');
+        if (this.quill && this.quill.setText) {
+            this.quill.setText('');
+        }
         this.currentPhotos = [];
         this.renderPhotoPreview();
     }
