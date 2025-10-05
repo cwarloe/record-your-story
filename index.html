@@ -12,34 +12,54 @@
         <h1>Record Your Story</h1>
         <p>Your personal history, beautifully preserved</p>
     </header>
-    <nav>
-        <ul>
-            <li><a href="#about">About</a></li>
-            <li><a href="#features">Features</a></li>
-            <li><a href="#contact">Contact</a></li>
-        </ul>
-    </nav>
+
     <main>
-        <section id="banner">
-            <!-- Banner Image Here -->
-        </section>
-        <section id="features">
-            <article>
-                <h2>Timeline Creation</h2>
-                <p>Describe timeline creation feature...</p>
-            </article>
-            <article>
-                <h2>Event Logging</h2>
-                <p>Describe event logging feature...</p>
-            </article>
-            <article>
-                <h2>User Stories</h2>
-                <p>Describe user stories feature...</p>
-            </article>
-        </section>
+        <div class="container">
+            <!-- Add Event Form -->
+            <section id="add-event-section">
+                <h2>Add a Life Event</h2>
+                <form id="event-form">
+                    <div class="form-group">
+                        <label for="event-title">Title *</label>
+                        <input type="text" id="event-title" required placeholder="e.g., Graduated from college">
+                    </div>
+                    <div class="form-group">
+                        <label for="event-date">Date *</label>
+                        <input type="date" id="event-date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="event-description">Description</label>
+                        <textarea id="event-description" rows="4" placeholder="Tell your story..."></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Add Event</button>
+                        <button type="button" class="btn btn-secondary" id="cancel-btn" style="display: none;">Cancel</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Data Management -->
+            <section id="data-management">
+                <button class="btn btn-outline" id="export-btn">Export Data</button>
+                <button class="btn btn-outline" id="import-btn">Import Data</button>
+                <input type="file" id="import-file" accept=".json" style="display: none;">
+                <button class="btn btn-danger" id="clear-all-btn">Clear All</button>
+            </section>
+
+            <!-- Timeline Display -->
+            <section id="timeline-section">
+                <h2>Your Timeline</h2>
+                <div id="timeline-container">
+                    <p class="empty-state">No events yet. Add your first life event above!</p>
+                </div>
+            </section>
+        </div>
     </main>
+
     <footer>
-        <p>&copy; 2023 Record Your Story</p>
+        <p>&copy; 2024 Record Your Story | All data stored locally in your browser</p>
     </footer>
+
+    <script src="app.js"></script>
 </body>
 </html>
