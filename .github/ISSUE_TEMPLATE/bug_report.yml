@@ -1,0 +1,23 @@
+name: Bug report
+description: File a bug/defect
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Also tell us what you expected to happen
+      placeholder: Tell us what you see!
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: 1. Go to...\n2. Click...\n3. See error
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      placeholder: 1.0.0

@@ -1,0 +1,33 @@
+{
+  "name": "record-your-story",
+  "version": "1.0.0",
+  "description": "**Record Your Story** is a personal timeline application for documenting and organizing your life events with rich formatting, photos, and tags. Keep your memories safe with local-first storage that puts you in control of your data.",
+  "main": "app.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cwarloe/record-your-story.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/cwarloe/record-your-story/issues"
+  },
+  "homepage": "https://github.com/cwarloe/record-your-story#readme",
+  "devDependencies": {
+    "@types/node": "^24.6.2",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.9"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.58.0",
+    "@types/quill": "^2.0.14",
+    "quill": "^2.0.3"
+  }
+}
