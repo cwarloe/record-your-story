@@ -1,5 +1,6 @@
 import { supabase } from '@/services/supabase';
 import { claude } from '@/services/claude';
+import { invitationService } from '@/services/invitations';
 import type { User, Timeline, TimelineEvent } from '@/types';
 import Quill from 'quill';
 import 'quill/dist/quill.snow.css';
@@ -89,14 +90,26 @@ const MAX_HISTORY = 50;
 
 // Initialize app
 async function init() {
+  // Check for invitation token in URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const inviteToken = urlParams.get('invite');
+
   // Check for existing session
   const user = await supabase.getCurrentUser();
   currentUser = user as User | null;
 
   if (currentUser) {
+    // If user is logged in and has invitation token, accept it
+    if (inviteToken) {
+      await handleInvitationAcceptance(inviteToken);
+      // Clean URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
     await loadUserData();
     showApp();
   } else {
+    // If not logged in, show auth (invitation will be handled after login)
     showAuth();
   }
 
@@ -104,12 +117,36 @@ async function init() {
   supabase.onAuthStateChange(async (user) => {
     currentUser = user as User | null;
     if (user) {
+      // Check for invitation token after login
+      const urlParams = new URLSearchParams(window.location.search);
+      const inviteToken = urlParams.get('invite');
+
+      if (inviteToken) {
+        await handleInvitationAcceptance(inviteToken);
+        // Clean URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+
       await loadUserData();
       showApp();
     } else {
       showAuth();
     }
   });
+}
+
+// Handle invitation acceptance
+async function handleInvitationAcceptance(token: string) {
+  showToast('Processing invitation...', 'info');
+
+  const result = await invitationService.acceptInvitation(token);
+
+  if (result.success) {
+    showToast('✅ Invitation accepted! You now have access to the shared timeline.', 'success');
+    // The shared timeline will appear when we load user data
+  } else {
+    showToast(`❌ ${result.error || 'Failed to accept invitation'}`, 'error');
+  }
 }
 
 // Load user's timelines and events
@@ -344,6 +381,29 @@ function showApp() {
             <div id="connections-panel">
               <button type="button" id="add-connection-btn" class="btn btn-secondary btn-small">+ Link Event</button>
               <div id="connections-display" class="connections-display"></div>
+            </div>
+
+            <div class="invitation-section">
+              <label class="checkbox-label">
+                <input type="checkbox" id="invite-checkbox" />
+                <span>📧 Invite someone to see this event</span>
+              </label>
+              <div id="invitation-fields" class="invitation-fields" style="display: none;">
+                <input
+                  type="email"
+                  id="invite-email"
+                  placeholder="friend@example.com"
+                  class="invite-input"
+                />
+                <select id="invite-type" class="invite-select">
+                  <option value="view">View only</option>
+                  <option value="collaborate">Can collaborate</option>
+                </select>
+                <p class="invitation-hint">
+                  💡 They'll receive an email invitation to sign up and view your timeline.
+                  Perfect for sharing memories with family and friends!
+                </p>
+              </div>
             </div>
 
             <div class="modal-actions">
@@ -842,6 +902,15 @@ function showEventModal(eventId?: string) {
     }
   });
 
+  // Invitation checkbox listener
+  document.getElementById('invite-checkbox')?.addEventListener('change', (e) => {
+    const checked = (e.target as HTMLInputElement).checked;
+    const fields = document.getElementById('invitation-fields');
+    if (fields) {
+      fields.style.display = checked ? 'block' : 'none';
+    }
+  });
+
   // Drag & drop listeners
   setupDragAndDrop();
 
@@ -1290,11 +1359,43 @@ async function handleEventSubmit(e: SubmitEvent) {
       await saveConnections(data.id);
 
       events.push(data);
+
+      // Handle invitation if checked
+      const inviteCheckbox = document.getElementById('invite-checkbox') as HTMLInputElement;
+      const inviteEmail = (document.getElementById('invite-email') as HTMLInputElement)?.value;
+      const inviteType = (document.getElementById('invite-type') as HTMLSelectElement)?.value as 'view' | 'collaborate';
+
+      if (inviteCheckbox?.checked && inviteEmail && currentUser && currentTimeline) {
+        // Send invitation in background (don't block success message)
+        sendInvitation(inviteEmail, inviteType, data.title);
+      }
+
       showToast('Event created successfully! ✅', 'success');
       hideEventModal();
       refreshTimeline();
       initTheme();
     }
+  }
+}
+
+// Send invitation helper
+async function sendInvitation(email: string, type: 'view' | 'collaborate', eventTitle: string) {
+  if (!currentUser || !currentTimeline) return;
+
+  showToast('📧 Sending invitation...', 'info');
+
+  const result = await invitationService.sendInvitation({
+    email,
+    senderName: currentUser.email.split('@')[0], // Use email prefix as name
+    eventTitle,
+    timelineId: currentTimeline.id,
+    invitationType: type,
+  });
+
+  if (result.success) {
+    showToast(`✅ Invitation sent to ${email}`, 'success');
+  } else {
+    showToast(`❌ Failed to send invitation: ${result.error}`, 'error');
   }
 }
 
