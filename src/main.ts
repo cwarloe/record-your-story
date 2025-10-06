@@ -384,6 +384,7 @@ function showApp() {
             <label>🔗 Connected Events</label>
             <div id="connections-panel">
               <button type="button" id="add-connection-btn" class="btn btn-secondary btn-small">+ Link Event</button>
+              ${claude.isEnabled() ? '<button type="button" id="ai-suggest-connections-btn" class="btn btn-secondary btn-small">🤖 Suggest Links</button>' : ''}
               <div id="connections-display" class="connections-display"></div>
             </div>
 
@@ -897,6 +898,7 @@ function showEventModal(eventId?: string) {
   document.getElementById('event-tags')?.addEventListener('keypress', handleTagInput);
   document.getElementById('photo-upload')?.addEventListener('change', handlePhotoUpload);
   document.getElementById('add-connection-btn')?.addEventListener('click', showConnectionPicker);
+  document.getElementById('ai-suggest-connections-btn')?.addEventListener('click', handleAISuggestConnections);
   document.querySelector('.modal-overlay')?.addEventListener('click', hideEventModal);
 
   // Voice recording listener
@@ -1069,6 +1071,100 @@ function renderPhotoPreview() {
 }
 
 // Connection handlers
+// AI Suggest Connections
+async function handleAISuggestConnections() {
+  if (!claude.isEnabled()) {
+    showToast('Claude AI not enabled', 'error');
+    return;
+  }
+
+  const titleInput = document.getElementById('event-title') as HTMLInputElement;
+  const title = titleInput?.value.trim();
+
+  if (!title) {
+    showToast('Please add a title first', 'info');
+    return;
+  }
+
+  if (!quill) {
+    showToast('Editor not ready', 'error');
+    return;
+  }
+
+  const description = quill.getText().trim();
+
+  if (!description) {
+    showToast('Please add a description for better suggestions', 'info');
+    return;
+  }
+
+  if (events.length < 2) {
+    showToast('Need at least 2 events to suggest connections', 'info');
+    return;
+  }
+
+  const suggestBtn = document.getElementById('ai-suggest-connections-btn') as HTMLButtonElement;
+  if (suggestBtn) {
+    suggestBtn.disabled = true;
+    suggestBtn.textContent = '🤖 Analyzing...';
+  }
+
+  try {
+    const currentEvent = {
+      id: editingEventId || 'new',
+      title,
+      description,
+      date: (document.getElementById('event-date') as HTMLInputElement)?.value || '',
+      tags: currentTags
+    };
+
+    const allEvents = events.map(e => ({
+      id: e.id,
+      title: e.title,
+      date: e.date,
+      tags: e.tags || []
+    }));
+
+    const result = await claude.suggestConnections(currentEvent, allEvents);
+
+    if (result.error) {
+      showToast(result.error, 'error');
+      return;
+    }
+
+    if (!result.connections || result.connections.length === 0) {
+      showToast('No related events found', 'info');
+      return;
+    }
+
+    // Add high-confidence suggestions to connections
+    const highConfidenceLinks = result.connections.filter(c => c.confidence >= 60);
+
+    if (highConfidenceLinks.length === 0) {
+      showToast('No strong connections found', 'info');
+      return;
+    }
+
+    highConfidenceLinks.forEach(conn => {
+      if (!currentConnections.includes(conn.eventId)) {
+        currentConnections.push(conn.eventId);
+      }
+    });
+
+    renderConnections();
+    showToast(`✨ Added ${highConfidenceLinks.length} AI-suggested connection(s)!`, 'success');
+
+  } catch (error) {
+    console.error('AI connection error:', error);
+    showToast('Failed to suggest connections', 'error');
+  } finally {
+    if (suggestBtn) {
+      suggestBtn.disabled = false;
+      suggestBtn.textContent = '🤖 Suggest Links';
+    }
+  }
+}
+
 function showConnectionPicker() {
   const connectionsDisplay = document.getElementById('connections-display');
   if (!connectionsDisplay) return;

@@ -185,6 +185,75 @@ Respond in JSON:
       return { error: error.message };
     }
   }
+
+  // Suggest related events for connection
+  async suggestConnections(
+    currentEvent: { id: string; title: string; description: string; date: string; tags: string[] },
+    allEvents: Array<{ id: string; title: string; date: string; tags: string[] }>
+  ): Promise<{
+    connections?: Array<{ eventId: string; reason: string; confidence: number }>;
+    error?: string;
+  }> {
+    if (!this.enabled || !this.client) {
+      return { error: 'Claude AI not enabled' };
+    }
+
+    try {
+      const otherEvents = allEvents.filter(e => e.id !== currentEvent.id);
+      const eventsText = otherEvents.map(e =>
+        `ID: ${e.id}\nTitle: ${e.title}\nDate: ${e.date}\nTags: ${e.tags.join(', ')}`
+      ).join('\n\n');
+
+      const response = await this.client.messages.create({
+        model: 'claude-3-5-sonnet-20241022',
+        max_tokens: 1024,
+        messages: [{
+          role: 'user',
+          content: `Analyze this event and suggest which other events it's related to:
+
+CURRENT EVENT:
+Title: ${currentEvent.title}
+Description: ${currentEvent.description}
+Date: ${currentEvent.date}
+Tags: ${currentEvent.tags.join(', ')}
+
+OTHER EVENTS:
+${eventsText}
+
+Find up to 5 related events based on:
+- Shared themes, people, or locations
+- Temporal proximity
+- Cause-and-effect relationships
+- Similar tags or topics
+
+Respond in JSON with confidence scores (0-100):
+{
+  "connections": [
+    {
+      "eventId": "event-id-here",
+      "reason": "Brief explanation of connection",
+      "confidence": 85
+    }
+  ]
+}`
+        }]
+      });
+
+      const content = response.content[0];
+      if (content.type === 'text') {
+        const text = content.text;
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          return JSON.parse(jsonMatch[0]);
+        }
+      }
+
+      return { error: 'Failed to parse response' };
+    } catch (error: any) {
+      console.error('Claude API error:', error);
+      return { error: error.message };
+    }
+  }
 }
 
 export const claude = new ClaudeService();
