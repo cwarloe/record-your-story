@@ -37,11 +37,25 @@ CREATE TABLE IF NOT EXISTS public.events (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Event photos table
+-- Event photos table (legacy - keeping for backwards compatibility)
 CREATE TABLE IF NOT EXISTS public.event_photos (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   event_id UUID NOT NULL REFERENCES public.events(id) ON DELETE CASCADE,
   data TEXT NOT NULL, -- base64 encoded image
+  "order" INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Event media table (v2.2.0 - supports photos, videos, audio)
+CREATE TABLE IF NOT EXISTS public.event_media (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  event_id UUID NOT NULL REFERENCES public.events(id) ON DELETE CASCADE,
+  media_type TEXT NOT NULL CHECK (media_type IN ('photo', 'video', 'audio')),
+  data TEXT NOT NULL, -- base64 encoded or data URL
+  thumbnail TEXT, -- thumbnail for video/audio
+  caption TEXT,
+  transcript TEXT, -- for audio/video transcriptions
+  duration INTEGER, -- duration in seconds for audio/video
   "order" INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -85,6 +99,7 @@ CREATE INDEX IF NOT EXISTS idx_events_timeline ON public.events(timeline_id);
 CREATE INDEX IF NOT EXISTS idx_events_author ON public.events(author_id);
 CREATE INDEX IF NOT EXISTS idx_events_date ON public.events(date DESC);
 CREATE INDEX IF NOT EXISTS idx_event_photos_event ON public.event_photos(event_id);
+CREATE INDEX IF NOT EXISTS idx_event_media_event ON public.event_media(event_id);
 CREATE INDEX IF NOT EXISTS idx_timelines_owner ON public.timelines(owner_id);
 CREATE INDEX IF NOT EXISTS idx_mentions_user ON public.event_mentions(mentioned_user_id);
 CREATE INDEX IF NOT EXISTS idx_mentions_event ON public.event_mentions(event_id);
@@ -98,6 +113,7 @@ ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.timelines ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.event_photos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.event_media ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.event_connections ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.event_mentions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.shared_timelines ENABLE ROW LEVEL SECURITY;
@@ -205,6 +221,61 @@ CREATE POLICY "Users can delete photos from their own events"
   ON public.event_photos FOR DELETE
   USING (
     event_id IN (SELECT id FROM public.events WHERE auth.uid() = author_id)
+  );
+
+-- Event media policies (v2.2.0)
+CREATE POLICY "Users can view media of events they have access to"
+  ON public.event_media FOR SELECT
+  USING (
+    event_id IN (
+      SELECT id FROM public.events WHERE
+        auth.uid() = author_id OR
+        auth.uid() = ANY(mentions) OR
+        timeline_id IN (SELECT id FROM public.timelines WHERE owner_id = auth.uid()) OR
+        timeline_id IN (
+          SELECT timeline_id FROM public.shared_timelines
+          WHERE user_id = auth.uid() AND accepted = TRUE
+        )
+    )
+  );
+
+CREATE POLICY "Users can add media to events they can edit"
+  ON public.event_media FOR INSERT
+  WITH CHECK (
+    event_id IN (
+      SELECT id FROM public.events WHERE
+        auth.uid() = author_id OR
+        timeline_id IN (
+          SELECT timeline_id FROM public.shared_timelines
+          WHERE user_id = auth.uid() AND accepted = TRUE AND permission_level IN ('edit', 'admin')
+        )
+    )
+  );
+
+CREATE POLICY "Users can update media of events they can edit"
+  ON public.event_media FOR UPDATE
+  USING (
+    event_id IN (
+      SELECT id FROM public.events WHERE
+        auth.uid() = author_id OR
+        timeline_id IN (
+          SELECT timeline_id FROM public.shared_timelines
+          WHERE user_id = auth.uid() AND accepted = TRUE AND permission_level IN ('edit', 'admin')
+        )
+    )
+  );
+
+CREATE POLICY "Users can delete media from events they can edit"
+  ON public.event_media FOR DELETE
+  USING (
+    event_id IN (
+      SELECT id FROM public.events WHERE
+        auth.uid() = author_id OR
+        timeline_id IN (
+          SELECT timeline_id FROM public.shared_timelines
+          WHERE user_id = auth.uid() AND accepted = TRUE AND permission_level IN ('edit', 'admin')
+        )
+    )
   );
 
 -- Event mentions policies

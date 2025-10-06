@@ -38,6 +38,19 @@ export interface EventPhoto {
   created_at: string;
 }
 
+export interface EventMedia {
+  id: string;
+  event_id: EventId;
+  media_type: 'photo' | 'video' | 'audio';
+  data: string;  // base64 or data URL
+  thumbnail?: string;
+  caption?: string;
+  transcript?: string;
+  duration?: number;  // seconds
+  order: number;
+  created_at: string;
+}
+
 export interface Timeline {
   id: TimelineId;
   name: string;
