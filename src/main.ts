@@ -1,4 +1,5 @@
 import { supabase } from '@/services/supabase';
+import { claude } from '@/services/claude';
 import type { User, Timeline, TimelineEvent } from '@/types';
 import Quill from 'quill';
 import 'quill/dist/quill.snow.css';
@@ -16,6 +17,16 @@ let currentTags: string[] = [];
 let currentPhotos: string[] = [];
 let editingEventId: string | null = null;
 let currentConnections: string[] = []; // Event IDs to connect
+
+// AI / Voice state (v2.3.0) - Ready for full implementation
+// Check if Claude AI is available
+if (claude.isEnabled()) {
+  console.log('🤖 AI features enabled');
+}
+// Web Speech API initialization (to be implemented)
+// let recognition: any = null;
+// let isRecording = false;
+// let recordedTranscript = '';
 
 // Filter state
 let searchQuery = '';
