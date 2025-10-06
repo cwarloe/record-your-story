@@ -313,6 +313,11 @@ function showApp() {
 
     // Keyboard shortcuts
     document.addEventListener('keydown', (e: KeyboardEvent) => {
+      // Don't trigger shortcuts when typing in input fields
+      const target = e.target as HTMLElement;
+      const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+
+      // Ctrl/Cmd shortcuts
       if (e.ctrlKey || e.metaKey) {
         if (e.key === 'z' && !e.shiftKey) {
           e.preventDefault();
@@ -320,6 +325,33 @@ function showApp() {
         } else if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) {
           e.preventDefault();
           redo();
+        } else if (e.key === 'n') {
+          e.preventDefault();
+          showEventModal();
+        } else if (e.key === 'k') {
+          e.preventDefault();
+          document.getElementById('search-input')?.focus();
+        } else if (e.key === 'p') {
+          e.preventDefault();
+          exportToPDF();
+        } else if (e.key === 's') {
+          e.preventDefault();
+          // Save is handled by form submit, just prevent browser save
+        }
+      }
+
+      // Non-modifier shortcuts (only when not in input)
+      if (!isInput && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        if (e.key === '?') {
+          e.preventDefault();
+          showKeyboardShortcuts();
+        } else if (e.key === 'Escape') {
+          // Close any open modals
+          hideEventModal();
+          const shortcutsModal = document.getElementById('shortcuts-modal');
+          if (shortcutsModal && !shortcutsModal.classList.contains('hidden')) {
+            shortcutsModal.classList.add('hidden');
+          }
         }
       }
     });
@@ -1463,6 +1495,89 @@ async function exportToPDF() {
 
   // Show success toast
   showToast('Timeline exported to PDF successfully!', 'success');
+}
+
+// Show keyboard shortcuts modal
+function showKeyboardShortcuts() {
+  const app = document.getElementById('app');
+  if (!app) return;
+
+  // Create modal HTML
+  const modalHtml = `
+    <div id="shortcuts-modal" class="modal">
+      <div class="modal-overlay"></div>
+      <div class="modal-content shortcuts-modal-content">
+        <div class="modal-header">
+          <h3>⌨️ Keyboard Shortcuts</h3>
+          <button id="shortcuts-modal-close" class="modal-close">&times;</button>
+        </div>
+        <div class="shortcuts-grid">
+          <div class="shortcuts-section">
+            <h4>Navigation</h4>
+            <div class="shortcut-item">
+              <kbd>Ctrl</kbd> + <kbd>K</kbd>
+              <span>Focus Search</span>
+            </div>
+            <div class="shortcut-item">
+              <kbd>Esc</kbd>
+              <span>Close Modal</span>
+            </div>
+            <div class="shortcut-item">
+              <kbd>?</kbd>
+              <span>Show This Help</span>
+            </div>
+          </div>
+
+          <div class="shortcuts-section">
+            <h4>Actions</h4>
+            <div class="shortcut-item">
+              <kbd>Ctrl</kbd> + <kbd>N</kbd>
+              <span>New Event</span>
+            </div>
+            <div class="shortcut-item">
+              <kbd>Ctrl</kbd> + <kbd>P</kbd>
+              <span>Export PDF</span>
+            </div>
+            <div class="shortcut-item">
+              <kbd>Ctrl</kbd> + <kbd>S</kbd>
+              <span>Save Event (in modal)</span>
+            </div>
+          </div>
+
+          <div class="shortcuts-section">
+            <h4>Edit</h4>
+            <div class="shortcut-item">
+              <kbd>Ctrl</kbd> + <kbd>Z</kbd>
+              <span>Undo</span>
+            </div>
+            <div class="shortcut-item">
+              <kbd>Ctrl</kbd> + <kbd>Y</kbd>
+              <span>Redo</span>
+            </div>
+            <div class="shortcut-item">
+              <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Z</kbd>
+              <span>Redo (Alt)</span>
+            </div>
+          </div>
+        </div>
+        <p class="shortcuts-note">💡 On Mac, use <kbd>Cmd</kbd> instead of <kbd>Ctrl</kbd></p>
+      </div>
+    </div>
+  `;
+
+  // Add modal to page
+  app.insertAdjacentHTML('beforeend', modalHtml);
+
+  // Event listeners
+  document.getElementById('shortcuts-modal-close')?.addEventListener('click', hideKeyboardShortcuts);
+  document.querySelector('#shortcuts-modal .modal-overlay')?.addEventListener('click', hideKeyboardShortcuts);
+}
+
+function hideKeyboardShortcuts() {
+  const modal = document.getElementById('shortcuts-modal');
+  if (modal) {
+    modal.remove();
+  }
 }
 
 // Start app
