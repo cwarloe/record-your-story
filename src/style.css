@@ -375,31 +375,110 @@ label {
   font-size: var(--font-size-lg);
 }
 
+/* Timeline year markers */
+.timeline-year-marker {
+  position: relative;
+  text-align: center;
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--purple);
+  margin: var(--spacing-xl) 0 var(--spacing-lg) 0;
+  padding: var(--spacing-sm) 0;
+}
+
+.timeline-year-marker::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, var(--border) 20%, var(--border) 80%, transparent 100%);
+  z-index: -1;
+}
+
+.timeline-year-marker::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 100%;
+  width: 3px;
+  height: 40px;
+  background: linear-gradient(180deg, var(--purple), var(--blue));
+}
+
+/* Timeline events with connector line */
 .timeline-event {
+  position: relative;
+  display: flex;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+  padding-left: 40px;
+}
+
+.timeline-event::before {
+  content: '';
+  position: absolute;
+  left: 18px;
+  top: 32px;
+  bottom: -32px;
+  width: 3px;
+  background: linear-gradient(180deg, var(--purple) 0%, var(--blue) 100%);
+  opacity: 0.3;
+}
+
+.timeline-event:last-child::before {
+  display: none;
+}
+
+/* Timeline dot marker */
+.timeline-dot {
+  position: absolute;
+  left: 7px;
+  top: 24px;
+  width: 24px;
+  height: 24px;
+  background: linear-gradient(135deg, var(--purple) 0%, var(--blue) 100%);
+  border: 4px solid var(--background);
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(114, 102, 255, 0.3);
+  z-index: 2;
+  transition: var(--transition);
+}
+
+.timeline-event:hover .timeline-dot {
+  transform: scale(1.2);
+  box-shadow: 0 4px 16px rgba(114, 102, 255, 0.5);
+}
+
+/* Event card */
+.event-card {
+  flex: 1;
   background: var(--bg-secondary);
   border-radius: var(--radius-lg);
   padding: var(--spacing-lg);
   box-shadow: 0 2px 8px var(--shadow);
   transition: var(--transition);
-  display: flex;
-  gap: var(--spacing-md);
 }
 
-.timeline-event:hover {
+.timeline-event:hover .event-card {
   transform: translateY(-2px);
   box-shadow: 0 4px 16px var(--shadow);
 }
 
 .event-date {
-  flex-shrink: 0;
-  width: 120px;
   font-weight: 600;
   color: var(--purple);
   font-size: var(--font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: var(--spacing-xs);
 }
 
 .event-content {
-  flex: 1;
+  margin-top: var(--spacing-sm);
 }
 
 .event-content h3 {

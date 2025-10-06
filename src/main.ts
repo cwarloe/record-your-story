@@ -3,6 +3,8 @@ import type { User, Timeline, TimelineEvent } from '@/types';
 import Quill from 'quill';
 import 'quill/dist/quill.snow.css';
 import './style.css';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 // App state
 let currentUser: User | null = null;
@@ -162,6 +164,7 @@ function showApp() {
           <button id="new-timeline-btn" class="btn btn-small" title="Create Timeline">+ Timeline</button>
         </div>
         <div class="header-actions">
+          <button id="export-pdf-btn" class="btn btn-secondary btn-small" title="Export to PDF">📄 Export PDF</button>
           <button id="theme-toggle" class="theme-toggle">🌙</button>
           <span class="user-email">${currentUser?.email}</span>
           <button id="signout-btn" class="btn btn-small">Sign Out</button>
@@ -242,6 +245,9 @@ function showApp() {
   document.getElementById('timeline-select')?.addEventListener('change', handleTimelineSwitch);
   document.getElementById('new-timeline-btn')?.addEventListener('click', showCreateTimelineModal);
 
+  // Export listener
+  document.getElementById('export-pdf-btn')?.addEventListener('click', exportToPDF);
+
   // Attach event card listeners (edit, delete, tags)
   attachTimelineEventListeners();
 
@@ -291,47 +297,64 @@ function renderTimeline(): string {
     return '<p class="empty-state">No events match your filters. Try adjusting your search.</p>';
   }
 
-  return filteredEvents
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .map(event => {
-      const eventWithPhotos = event as any;
-      return `
+  // Sort events by date (newest first)
+  const sortedEvents = filteredEvents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  let html = '';
+  let lastYear: number | null = null;
+
+  sortedEvents.forEach(event => {
+    const eventDate = new Date(event.date);
+    const eventYear = eventDate.getFullYear();
+
+    // Add year separator if year changed
+    if (lastYear !== eventYear) {
+      html += `<div class="timeline-year-marker">${eventYear}</div>`;
+      lastYear = eventYear;
+    }
+
+    const eventWithPhotos = event as any;
+    html += `
       <div class="timeline-event" data-id="${event.id}">
-        <div class="event-date">${new Date(event.date).toLocaleDateString()}</div>
-        <div class="event-content">
-          <h3>
-            ${event.title}
-            ${eventConnections.has(event.id) && eventConnections.get(event.id)!.length > 0
-              ? `<span class="connection-badge" title="Connected to ${eventConnections.get(event.id)!.length} event(s)">
-                  🔗 ${eventConnections.get(event.id)!.length}
-                </span>`
+        <div class="timeline-dot"></div>
+        <div class="event-card">
+          <div class="event-date">${eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
+          <div class="event-content">
+            <h3>
+              ${event.title}
+              ${eventConnections.has(event.id) && eventConnections.get(event.id)!.length > 0
+                ? `<span class="connection-badge" title="Connected to ${eventConnections.get(event.id)!.length} event(s)">
+                    🔗 ${eventConnections.get(event.id)!.length}
+                  </span>`
+                : ''
+              }
+            </h3>
+            <div class="event-description">${event.description || ''}</div>
+            ${eventWithPhotos.photos && eventWithPhotos.photos.length > 0
+              ? `<div class="event-photos">
+                  ${eventWithPhotos.photos.map((photo: any) => `
+                    <img src="${photo.data}" alt="Event photo" class="event-photo" />
+                  `).join('')}
+                </div>`
               : ''
             }
-          </h3>
-          <div class="event-description">${event.description || ''}</div>
-          ${eventWithPhotos.photos && eventWithPhotos.photos.length > 0
-            ? `<div class="event-photos">
-                ${eventWithPhotos.photos.map((photo: any) => `
-                  <img src="${photo.data}" alt="Event photo" class="event-photo" />
-                `).join('')}
-              </div>`
-            : ''
-          }
-          ${event.tags && event.tags.length > 0
-            ? `<div class="event-tags">${event.tags.map(tag => `
-              <span class="tag clickable-tag" data-tag="${tag}">${tag}</span>
-            `).join('')}</div>`
-            : ''
-          }
-          <div class="event-actions">
-            <button class="btn-icon edit-btn" data-id="${event.id}" title="Edit">✏️</button>
-            <button class="btn-icon delete-btn" data-id="${event.id}" title="Delete">🗑️</button>
+            ${event.tags && event.tags.length > 0
+              ? `<div class="event-tags">${event.tags.map(tag => `
+                <span class="tag clickable-tag" data-tag="${tag}">${tag}</span>
+              `).join('')}</div>`
+              : ''
+            }
+            <div class="event-actions">
+              <button class="btn-icon edit-btn" data-id="${event.id}" title="Edit">✏️</button>
+              <button class="btn-icon delete-btn" data-id="${event.id}" title="Delete">🗑️</button>
+            </div>
           </div>
         </div>
       </div>
-      `;
-    })
-    .join('');
+    `;
+  });
+
+  return html;
 }
 
 // Show event modal (for create or edit)
@@ -1037,6 +1060,80 @@ function refreshTimeline() {
     // Re-attach all event listeners
     attachTimelineEventListeners();
   }
+}
+
+// Export timeline to PDF
+async function exportToPDF() {
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+
+  // Title
+  doc.setFontSize(20);
+  doc.setTextColor(114, 102, 255); // Purple
+  doc.text(currentTimeline?.name || 'My Timeline', pageWidth / 2, 20, { align: 'center' });
+
+  // Metadata
+  doc.setFontSize(10);
+  doc.setTextColor(100, 100, 100);
+  doc.text(`Generated: ${new Date().toLocaleDateString()}`, pageWidth / 2, 28, { align: 'center' });
+
+  let yPos = 40;
+  const margin = 20;
+  const maxWidth = pageWidth - (margin * 2);
+
+  // Sort events by date (oldest first for PDF)
+  const sortedEvents = events.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+  for (const event of sortedEvents) {
+    // Check if we need a new page
+    if (yPos > pageHeight - 40) {
+      doc.addPage();
+      yPos = 20;
+    }
+
+    // Date
+    doc.setFontSize(10);
+    doc.setTextColor(114, 102, 255);
+    doc.text(new Date(event.date).toLocaleDateString(), margin, yPos);
+    yPos += 6;
+
+    // Title
+    doc.setFontSize(14);
+    doc.setTextColor(0, 0, 0);
+    const titleLines = doc.splitTextToSize(event.title, maxWidth);
+    doc.text(titleLines, margin, yPos);
+    yPos += titleLines.length * 6 + 2;
+
+    // Description (strip HTML)
+    if (event.description) {
+      doc.setFontSize(10);
+      doc.setTextColor(60, 60, 60);
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = event.description;
+      const textContent = tempDiv.textContent || tempDiv.innerText || '';
+      const descLines = doc.splitTextToSize(textContent, maxWidth);
+      doc.text(descLines, margin, yPos);
+      yPos += descLines.length * 5 + 2;
+    }
+
+    // Tags
+    if (event.tags && event.tags.length > 0) {
+      doc.setFontSize(9);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Tags: ${event.tags.join(', ')}`, margin, yPos);
+      yPos += 5;
+    }
+
+    // Separator line
+    doc.setDrawColor(200, 200, 200);
+    doc.line(margin, yPos + 3, pageWidth - margin, yPos + 3);
+    yPos += 12;
+  }
+
+  // Save PDF
+  const filename = `${currentTimeline?.name || 'timeline'}_${new Date().toISOString().split('T')[0]}.pdf`;
+  doc.save(filename);
 }
 
 // Start app
