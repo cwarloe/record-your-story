@@ -40,7 +40,7 @@ CREATE POLICY "Users can create invitations for their timelines"
   WITH CHECK (
     EXISTS (
       SELECT 1 FROM public.timelines
-      WHERE id = timeline_id AND user_id = auth.uid()
+      WHERE id = timeline_id AND owner_id = auth.uid()
     )
   );
 
