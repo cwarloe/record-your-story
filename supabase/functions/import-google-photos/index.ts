@@ -71,7 +71,7 @@ serve(async (req) => {
       .from('timelines')
       .select('id')
       .eq('id', timelineId)
-      .eq('user_id', user.id)
+      .eq('owner_id', user.id)
       .single()
 
     if (timelineError || !timeline) {
