@@ -1,6 +1,6 @@
 {
   "name": "record-your-story",
-  "version": "1.0.0",
+  "version": "2.6.0",
   "description": "**Record Your Story** is a personal timeline application for documenting and organizing your life events with rich formatting, photos, and tags. Keep your memories safe with local-first storage that puts you in control of your data.",
   "main": "app.js",
   "scripts": {
