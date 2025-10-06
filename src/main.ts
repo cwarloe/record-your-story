@@ -320,6 +320,7 @@ function showApp() {
         <div class="timeline-header">
           <h2>${currentTimeline?.name || 'My Story'}</h2>
           <div class="timeline-actions">
+            ${claude.isEnabled() ? '<button id="ai-summarize-btn" class="btn btn-secondary btn-small" title="AI Timeline Summary">🤖 Summarize</button>' : ''}
             <button id="import-google-photos-btn" class="btn btn-secondary btn-small" title="Import from Google Photos">📷 Import Photos</button>
             <button id="share-timeline-btn" class="btn btn-secondary btn-small" title="Share Timeline">👥 Share</button>
             <button id="add-event-btn" class="btn btn-primary">+ Add Event</button>
@@ -466,6 +467,7 @@ function showApp() {
     document.getElementById('signout-btn')?.addEventListener('click', handleSignOut);
     document.getElementById('add-event-btn')?.addEventListener('click', () => showEventModal());
     document.getElementById('import-google-photos-btn')?.addEventListener('click', handleGooglePhotosImport);
+    document.getElementById('ai-summarize-btn')?.addEventListener('click', showAISummaryModal);
     document.getElementById('theme-toggle')?.addEventListener('click', toggleTheme);
 
     // Search and filter listeners
@@ -2139,6 +2141,112 @@ async function showShareTimelineModal() {
 
 function hideShareTimelineModal() {
   const modal = document.getElementById('share-modal');
+  if (modal) {
+    modal.remove();
+  }
+}
+
+// AI Timeline Summary Modal
+async function showAISummaryModal() {
+  if (!currentTimeline || events.length === 0) {
+    showToast('No events to summarize', 'error');
+    return;
+  }
+
+  if (!claude.isEnabled()) {
+    showToast('Claude AI not enabled. Add VITE_ANTHROPIC_API_KEY to enable.', 'error');
+    return;
+  }
+
+  const app = document.getElementById('app');
+  if (!app) return;
+
+  const modalHtml = `
+    <div id="ai-summary-modal" class="modal">
+      <div class="modal-overlay"></div>
+      <div class="modal-content" style="max-width: 700px;">
+        <div class="modal-header">
+          <h3>🤖 AI Timeline Summary</h3>
+          <button id="ai-summary-close" class="modal-close">&times;</button>
+        </div>
+
+        <div style="padding: 20px;">
+          <div id="summary-loading" style="text-align: center; padding: 40px;">
+            <div class="spinner" style="margin: 0 auto 20px;"></div>
+            <p>Claude is analyzing your timeline...</p>
+          </div>
+
+          <div id="summary-content" style="display: none;">
+            <div class="summary-section">
+              <h4>📖 Narrative Summary</h4>
+              <p id="summary-text" style="line-height: 1.6; color: #444;"></p>
+            </div>
+
+            <div class="summary-section" style="margin-top: 24px;">
+              <h4>💡 Key Insights</h4>
+              <ul id="insights-list" style="line-height: 1.8;"></ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button id="summary-done-btn" class="btn btn-primary">Done</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  app.insertAdjacentHTML('beforeend', modalHtml);
+
+  // Event listeners
+  document.getElementById('ai-summary-close')?.addEventListener('click', hideAISummaryModal);
+  document.getElementById('summary-done-btn')?.addEventListener('click', hideAISummaryModal);
+  document.querySelector('#ai-summary-modal .modal-overlay')?.addEventListener('click', hideAISummaryModal);
+
+  // Generate summary
+  try {
+    const eventsData = events.map(e => ({
+      title: e.title,
+      date: e.date,
+      tags: e.tags || []
+    }));
+
+    const result = await claude.summarizeTimeline(eventsData);
+
+    const loadingEl = document.getElementById('summary-loading');
+    const contentEl = document.getElementById('summary-content');
+    const summaryText = document.getElementById('summary-text');
+    const insightsList = document.getElementById('insights-list');
+
+    if (result.error) {
+      if (loadingEl) loadingEl.innerHTML = `<p style="color: #e74c3c;">Error: ${result.error}</p>`;
+      return;
+    }
+
+    if (loadingEl) loadingEl.style.display = 'none';
+    if (contentEl) contentEl.style.display = 'block';
+
+    if (summaryText && result.summary) {
+      summaryText.textContent = result.summary;
+    }
+
+    if (insightsList && result.insights) {
+      insightsList.innerHTML = result.insights
+        .map(insight => `<li style="margin-bottom: 8px;">${insight}</li>`)
+        .join('');
+    }
+
+  } catch (error) {
+    console.error('AI Summary error:', error);
+    const loadingEl = document.getElementById('summary-loading');
+    if (loadingEl) {
+      loadingEl.innerHTML = `<p style="color: #e74c3c;">Failed to generate summary. Please try again.</p>`;
+    }
+  }
+}
+
+function hideAISummaryModal() {
+  const modal = document.getElementById('ai-summary-modal');
   if (modal) {
     modal.remove();
   }

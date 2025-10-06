@@ -1313,6 +1313,36 @@ kbd {
   }
 }
 
+/* AI Summary Modal Styles */
+.summary-section {
+  background: var(--bg-secondary);
+  padding: 16px;
+  border-radius: 8px;
+  border-left: 4px solid var(--purple);
+}
+
+.summary-section h4 {
+  margin: 0 0 12px 0;
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.summary-section p {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.summary-section ul {
+  margin: 0;
+  padding-left: 24px;
+  color: var(--text-secondary);
+}
+
+.summary-section ul li {
+  margin-bottom: 8px;
+}
+
 .ai-suggestions {
   display: flex;
   flex-direction: column;
