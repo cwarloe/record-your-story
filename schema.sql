@@ -68,6 +68,18 @@ CREATE TABLE IF NOT EXISTS public.event_mentions (
   CONSTRAINT unique_mention UNIQUE (event_id, mentioned_user_id)
 );
 
+-- Timeline sharing table (for collaboration)
+CREATE TABLE IF NOT EXISTS public.shared_timelines (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  timeline_id UUID NOT NULL REFERENCES public.timelines(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  permission_level TEXT NOT NULL CHECK (permission_level IN ('view', 'edit', 'admin')),
+  invited_by UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  accepted BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  CONSTRAINT unique_share UNIQUE (timeline_id, user_id)
+);
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_events_timeline ON public.events(timeline_id);
 CREATE INDEX IF NOT EXISTS idx_events_author ON public.events(author_id);
@@ -76,6 +88,8 @@ CREATE INDEX IF NOT EXISTS idx_event_photos_event ON public.event_photos(event_i
 CREATE INDEX IF NOT EXISTS idx_timelines_owner ON public.timelines(owner_id);
 CREATE INDEX IF NOT EXISTS idx_mentions_user ON public.event_mentions(mentioned_user_id);
 CREATE INDEX IF NOT EXISTS idx_mentions_event ON public.event_mentions(event_id);
+CREATE INDEX IF NOT EXISTS idx_shared_timelines_user ON public.shared_timelines(user_id);
+CREATE INDEX IF NOT EXISTS idx_shared_timelines_timeline ON public.shared_timelines(timeline_id);
 
 -- Row Level Security (RLS) Policies
 
@@ -86,6 +100,7 @@ ALTER TABLE public.events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.event_photos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.event_connections ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.event_mentions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.shared_timelines ENABLE ROW LEVEL SECURITY;
 
 -- Users policies
 CREATE POLICY "Users can view their own profile"
@@ -97,44 +112,76 @@ CREATE POLICY "Users can update their own profile"
   USING (auth.uid() = id);
 
 -- Timelines policies
-CREATE POLICY "Users can view their own timelines"
+CREATE POLICY "Users can view their own timelines and shared timelines"
   ON public.timelines FOR SELECT
-  USING (auth.uid() = owner_id);
+  USING (
+    auth.uid() = owner_id OR
+    id IN (
+      SELECT timeline_id FROM public.shared_timelines
+      WHERE user_id = auth.uid() AND accepted = TRUE
+    )
+  );
 
 CREATE POLICY "Users can create timelines"
   ON public.timelines FOR INSERT
   WITH CHECK (auth.uid() = owner_id);
 
-CREATE POLICY "Users can update their own timelines"
+CREATE POLICY "Users can update their own timelines or shared timelines with edit permission"
   ON public.timelines FOR UPDATE
-  USING (auth.uid() = owner_id);
+  USING (
+    auth.uid() = owner_id OR
+    id IN (
+      SELECT timeline_id FROM public.shared_timelines
+      WHERE user_id = auth.uid() AND accepted = TRUE AND permission_level IN ('edit', 'admin')
+    )
+  );
 
 CREATE POLICY "Users can delete their own timelines"
   ON public.timelines FOR DELETE
   USING (auth.uid() = owner_id);
 
 -- Events policies
-CREATE POLICY "Users can view their own events"
+CREATE POLICY "Users can view events in their own or shared timelines"
   ON public.events FOR SELECT
   USING (
     auth.uid() = author_id OR
     auth.uid() = ANY(mentions) OR
-    timeline_id IN (SELECT id FROM public.timelines WHERE owner_id = auth.uid())
+    timeline_id IN (SELECT id FROM public.timelines WHERE owner_id = auth.uid()) OR
+    timeline_id IN (
+      SELECT timeline_id FROM public.shared_timelines
+      WHERE user_id = auth.uid() AND accepted = TRUE
+    )
   );
 
-CREATE POLICY "Users can create events in their timelines"
+CREATE POLICY "Users can create events in their own or shared timelines with edit permission"
   ON public.events FOR INSERT
   WITH CHECK (
-    timeline_id IN (SELECT id FROM public.timelines WHERE owner_id = auth.uid())
+    timeline_id IN (SELECT id FROM public.timelines WHERE owner_id = auth.uid()) OR
+    timeline_id IN (
+      SELECT timeline_id FROM public.shared_timelines
+      WHERE user_id = auth.uid() AND accepted = TRUE AND permission_level IN ('edit', 'admin')
+    )
   );
 
-CREATE POLICY "Users can update their own events"
+CREATE POLICY "Users can update their own events or events in shared timelines with edit permission"
   ON public.events FOR UPDATE
-  USING (auth.uid() = author_id);
+  USING (
+    auth.uid() = author_id OR
+    timeline_id IN (
+      SELECT timeline_id FROM public.shared_timelines
+      WHERE user_id = auth.uid() AND accepted = TRUE AND permission_level IN ('edit', 'admin')
+    )
+  );
 
-CREATE POLICY "Users can delete their own events"
+CREATE POLICY "Users can delete their own events or events in shared timelines with edit permission"
   ON public.events FOR DELETE
-  USING (auth.uid() = author_id);
+  USING (
+    auth.uid() = author_id OR
+    timeline_id IN (
+      SELECT timeline_id FROM public.shared_timelines
+      WHERE user_id = auth.uid() AND accepted = TRUE AND permission_level IN ('edit', 'admin')
+    )
+  );
 
 -- Event photos policies
 CREATE POLICY "Users can view photos of events they have access to"
@@ -199,6 +246,38 @@ CREATE POLICY "Users can update connections for their events"
     event_id_1 IN (SELECT id FROM public.events WHERE auth.uid() = author_id) OR
     event_id_2 IN (SELECT id FROM public.events WHERE auth.uid() = author_id)
   );
+
+-- Shared timelines policies
+CREATE POLICY "Users can view shares for their timelines or shares they're part of"
+  ON public.shared_timelines FOR SELECT
+  USING (
+    timeline_id IN (SELECT id FROM public.timelines WHERE owner_id = auth.uid()) OR
+    user_id = auth.uid()
+  );
+
+CREATE POLICY "Timeline owners can share their timelines"
+  ON public.shared_timelines FOR INSERT
+  WITH CHECK (
+    timeline_id IN (SELECT id FROM public.timelines WHERE owner_id = auth.uid())
+  );
+
+CREATE POLICY "Timeline owners and admins can update shares"
+  ON public.shared_timelines FOR UPDATE
+  USING (
+    timeline_id IN (SELECT id FROM public.timelines WHERE owner_id = auth.uid()) OR
+    (user_id = auth.uid() AND permission_level = 'admin')
+  );
+
+CREATE POLICY "Timeline owners and admins can delete shares"
+  ON public.shared_timelines FOR DELETE
+  USING (
+    timeline_id IN (SELECT id FROM public.timelines WHERE owner_id = auth.uid()) OR
+    (user_id = auth.uid() AND permission_level = 'admin')
+  );
+
+CREATE POLICY "Invited users can update their own share acceptance status"
+  ON public.shared_timelines FOR UPDATE
+  USING (user_id = auth.uid());
 
 -- Function to auto-update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()

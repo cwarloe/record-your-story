@@ -64,6 +64,16 @@ export interface EventMention {
   created_at: string;
 }
 
+export interface SharedTimeline {
+  id: string;
+  timeline_id: TimelineId;
+  user_id: UserId;
+  permission_level: 'view' | 'edit' | 'admin';
+  invited_by: UserId;
+  accepted: boolean;
+  created_at: string;
+}
+
 // UI State types
 export interface AppState {
   currentUser: User | null;

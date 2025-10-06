@@ -2,6 +2,76 @@
 
 All notable changes to Record Your Story will be documented in this file.
 
+## [2.1.0-alpha] - 2025-10-05
+
+### 🤝 Collaboration Foundation
+
+**Record Your Story v2.1.0-alpha** - Database schema and architecture for timeline collaboration (frontend implementation pending).
+
+### ✨ New Features (Schema Only)
+
+#### Database Schema
+- **`shared_timelines` table**: Stores timeline sharing relationships
+  - `timeline_id`: Which timeline is shared
+  - `user_id`: Who it's shared with
+  - `permission_level`: 'view', 'edit', or 'admin'
+  - `invited_by`: Who sent the invitation
+  - `accepted`: Whether invitation was accepted
+- **Indexes**: Optimized for user/timeline lookups
+- **RLS Policies**: Complete Row Level Security for collaboration
+
+#### Permission System
+- **View**: Read-only access to timeline and events
+- **Edit**: Can create, edit, and delete any event in timeline
+- **Admin**: Can manage collaborators + all edit permissions
+- **Owner**: Implicit admin + can delete timeline
+
+#### Updated RLS Policies
+- Timelines: Access for owners and accepted collaborators
+- Events: View/edit based on collaboration permissions
+- Photos: Access follows event access rules
+- Shared Timelines: Proper access control for invitations
+
+### 📚 Documentation
+
+Created **COLLABORATION.md** with complete implementation guide:
+- Database schema details
+- Permission level explanations
+- Step-by-step frontend implementation guide
+- Supabase service methods (code samples)
+- UI component designs (HTML/CSS)
+- Permission checking logic
+- Security considerations
+- Testing checklist
+
+### 🛠️ Technical Changes
+
+- Added `SharedTimeline` TypeScript interface
+- Updated all RLS policies to support collaboration
+- Added indexes for shared_timelines table
+- Extended timeline/event policies for shared access
+
+### 📊 Stats
+- **Files Modified**: 3 (schema.sql, types/index.ts, COLLABORATION.md)
+- **New Table**: shared_timelines
+- **New Type**: SharedTimeline interface
+- **Documentation**: Complete implementation guide (2000+ words)
+- **Status**: Schema ready, frontend implementation needed ⏳
+
+### 🚀 Next Steps
+
+To complete collaboration features:
+1. Add Supabase service methods (see COLLABORATION.md)
+2. Create share modal UI component
+3. Add pending invitations badge
+4. Implement permission checks in UI
+5. Add collaborators list display
+6. Test all permission levels
+
+**Estimated Effort**: 4-6 hours for full UI implementation
+
+---
+
 ## [2.0.3] - 2025-10-05
 
 ### ↶ Undo/Redo System
