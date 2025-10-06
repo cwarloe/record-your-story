@@ -2,6 +2,95 @@
 
 All notable changes to Record Your Story will be documented in this file.
 
+## [2.0.3] - 2025-10-05
+
+### ↶ Undo/Redo System
+
+**Record Your Story v2.0.3** - Complete undo/redo functionality with keyboard shortcuts and visual feedback.
+
+### ✨ New Features
+
+#### Undo/Redo System
+- **Action History**: Tracks up to 50 recent actions
+- **Undo Operations**: Ctrl+Z or ↶ Undo button
+  - Undo create event → Deletes the event
+  - Undo update event → Restores previous version
+  - Undo delete event → Recreates the event
+- **Redo Operations**: Ctrl+Y or Ctrl+Shift+Z or ↷ Redo button
+  - Redo all undone actions
+- **Smart History**: New actions clear redo history
+- **Button States**: Visual feedback (disabled/enabled, opacity changes)
+- **Toast Messages**: Shows what was undone/redone
+  - "Undone: Created 'Event Title'"
+  - "Redone: Edit to 'Event Title'"
+
+#### Keyboard Shortcuts
+- **Ctrl+Z / Cmd+Z**: Undo last action
+- **Ctrl+Y / Cmd+Y**: Redo last undone action
+- **Ctrl+Shift+Z / Cmd+Shift+Z**: Alternative redo shortcut
+- **Cross-platform**: Works on Windows, Mac, Linux
+
+#### UI Enhancements
+- **Header Buttons**: Undo ↶ and Redo ↷ buttons
+- **Tooltips**: Show keyboard shortcuts
+- **State Management**: Buttons automatically enable/disable
+- **Visual Feedback**: Opacity changes show availability
+
+### 🔄 How It Works
+
+**History Stack:**
+```typescript
+interface HistoryAction {
+  type: 'CREATE_EVENT' | 'UPDATE_EVENT' | 'DELETE_EVENT';
+  event: TimelineEvent;
+  previousEvent?: TimelineEvent;
+  timestamp: number;
+}
+```
+
+**Action Tracking:**
+- Event created → Added to history
+- Event updated → Stores both old and new versions
+- Event deleted → Stores deleted event for restoration
+- Maximum 50 actions (FIFO queue)
+
+**Undo Logic:**
+- Create → Delete from database
+- Update → Restore previous version
+- Delete → Recreate event with same ID
+
+**Redo Logic:**
+- Create → Recreate event
+- Update → Reapply changes
+- Delete → Delete again
+
+### 🐛 Bug Fixes
+
+1. **Updated Delete Confirmation**
+   - Changed message to "You can undo this action"
+   - Reduces anxiety about permanent deletion
+
+### 🛠️ Technical Changes
+
+- Added `HistoryAction` interface
+- Added `historyStack` and `historyIndex` state
+- Added `addToHistory()` function with max size limit
+- Added `undo()` and `redo()` async functions
+- Added `updateUndoRedoButtons()` for UI state
+- Integrated history tracking in `handleEventSubmit()`
+- Integrated history tracking in `handleDeleteEvent()`
+- Added keyboard event listener for shortcuts
+- Updated button states on app load
+
+### 📊 Stats
+- **Lines Added**: ~200 (undo/redo logic)
+- **Files Modified**: 2 (main.ts, CHANGELOG.md)
+- **New Functions**: 4 (addToHistory, undo, redo, updateUndoRedoButtons)
+- **Keyboard Shortcuts**: 3 (Ctrl+Z, Ctrl+Y, Ctrl+Shift+Z)
+- **Status**: Fully functional ✅
+
+---
+
 ## [2.0.2] - 2025-10-05
 
 ### 🎨 Quick Wins Sprint - UX Enhancements

@@ -26,6 +26,18 @@ let filterTags: string[] = [];
 // Store event connections
 let eventConnections: Map<string, string[]> = new Map();
 
+// Undo/Redo state
+interface HistoryAction {
+  type: 'CREATE_EVENT' | 'UPDATE_EVENT' | 'DELETE_EVENT';
+  event: TimelineEvent;
+  previousEvent?: TimelineEvent; // For updates
+  timestamp: number;
+}
+
+let historyStack: HistoryAction[] = [];
+let historyIndex: number = -1;
+const MAX_HISTORY = 50;
+
 // Initialize app
 async function init() {
   // Check for existing session
@@ -201,6 +213,8 @@ function showApp() {
             <button id="new-timeline-btn" class="btn btn-small" title="Create Timeline">+ Timeline</button>
           </div>
           <div class="header-actions">
+            <button id="undo-btn" class="btn btn-secondary btn-small" title="Undo (Ctrl+Z)" disabled style="opacity: 0.5;">↶ Undo</button>
+            <button id="redo-btn" class="btn btn-secondary btn-small" title="Redo (Ctrl+Y)" disabled style="opacity: 0.5;">↷ Redo</button>
             <button id="export-pdf-btn" class="btn btn-secondary btn-small" title="Export to PDF">📄 Export PDF</button>
             <button id="theme-toggle" class="theme-toggle">🌙</button>
             <span class="user-email">${currentUser?.email || 'User'}</span>
@@ -293,10 +307,28 @@ function showApp() {
     // Export listener
     document.getElementById('export-pdf-btn')?.addEventListener('click', exportToPDF);
 
+    // Undo/Redo listeners
+    document.getElementById('undo-btn')?.addEventListener('click', undo);
+    document.getElementById('redo-btn')?.addEventListener('click', redo);
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === 'z' && !e.shiftKey) {
+          e.preventDefault();
+          undo();
+        } else if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) {
+          e.preventDefault();
+          redo();
+        }
+      }
+    });
+
     // Attach event card listeners (edit, delete, tags)
     attachTimelineEventListeners();
 
     initTheme();
+    updateUndoRedoButtons();
   } catch (error) {
     console.error('Error rendering app:', error);
     app.innerHTML = `
@@ -863,6 +895,8 @@ async function handleEventSubmit(e: SubmitEvent) {
 
   if (editingEventId) {
     // Update existing event
+    const previousEvent = events.find(e => e.id === editingEventId);
+
     const { data, error } = await supabase.updateEvent(editingEventId, {
       title,
       date,
@@ -873,6 +907,16 @@ async function handleEventSubmit(e: SubmitEvent) {
     if (error) {
       showToast(`Error updating event: ${error.message}`, 'error');
     } else if (data) {
+      // Add to history
+      if (previousEvent) {
+        addToHistory({
+          type: 'UPDATE_EVENT',
+          event: data,
+          previousEvent: { ...previousEvent },
+          timestamp: Date.now()
+        });
+      }
+
       // Delete old photos and save new ones
       await supabase.deleteEventPhotos(editingEventId);
       if (currentPhotos.length > 0) {
@@ -911,6 +955,13 @@ async function handleEventSubmit(e: SubmitEvent) {
     if (error) {
       showToast(`Error creating event: ${error.message}`, 'error');
     } else if (data) {
+      // Add to history
+      addToHistory({
+        type: 'CREATE_EVENT',
+        event: data,
+        timestamp: Date.now()
+      });
+
       // Save photos if any
       if (currentPhotos.length > 0) {
         await supabase.saveEventPhotos(data.id, currentPhotos);
@@ -931,15 +982,25 @@ async function handleEventSubmit(e: SubmitEvent) {
 
 // Delete event handler
 async function handleDeleteEvent(eventId: string) {
-  if (!confirm('Are you sure you want to delete this event? This cannot be undone.')) {
+  if (!confirm('Are you sure you want to delete this event? You can undo this action.')) {
     return;
   }
+
+  const eventToDelete = events.find(e => e.id === eventId);
+  if (!eventToDelete) return;
 
   const { error } = await supabase.deleteEvent(eventId);
 
   if (error) {
     showToast(`Error deleting event: ${error.message}`, 'error');
   } else {
+    // Add to history before removing
+    addToHistory({
+      type: 'DELETE_EVENT',
+      event: { ...eventToDelete },
+      timestamp: Date.now()
+    });
+
     events = events.filter(e => e.id !== eventId);
     refreshTimeline();
     showToast('Event deleted successfully', 'success');
@@ -1191,6 +1252,140 @@ function showToast(message: string, type: 'success' | 'error' | 'info' = 'info')
     toast.classList.remove('show');
     setTimeout(() => toast.remove(), 300);
   }, 3000);
+}
+
+// Add action to history
+function addToHistory(action: HistoryAction) {
+  // Remove any actions after current index (user made new action after undo)
+  historyStack = historyStack.slice(0, historyIndex + 1);
+
+  // Add new action
+  historyStack.push(action);
+
+  // Limit history size
+  if (historyStack.length > MAX_HISTORY) {
+    historyStack.shift();
+  } else {
+    historyIndex++;
+  }
+
+  updateUndoRedoButtons();
+}
+
+// Undo last action
+async function undo() {
+  if (historyIndex < 0) {
+    showToast('Nothing to undo', 'info');
+    return;
+  }
+
+  const action = historyStack[historyIndex];
+
+  try {
+    switch (action.type) {
+      case 'CREATE_EVENT':
+        // Undo create = delete the event
+        await supabase.deleteEvent(action.event.id);
+        events = events.filter(e => e.id !== action.event.id);
+        showToast(`Undone: Created "${action.event.title}"`, 'info');
+        break;
+
+      case 'UPDATE_EVENT':
+        // Undo update = restore previous version
+        if (action.previousEvent) {
+          const { error } = await supabase.updateEvent(action.event.id, action.previousEvent);
+          if (!error) {
+            const index = events.findIndex(e => e.id === action.event.id);
+            if (index !== -1) {
+              events[index] = action.previousEvent;
+            }
+            showToast(`Undone: Edit to "${action.event.title}"`, 'info');
+          }
+        }
+        break;
+
+      case 'DELETE_EVENT':
+        // Undo delete = recreate the event
+        const { data, error } = await supabase.createEvent(action.event);
+        if (!error && data) {
+          events.push(data);
+          showToast(`Undone: Deleted "${action.event.title}"`, 'info');
+        }
+        break;
+    }
+
+    historyIndex--;
+    refreshTimeline();
+    updateUndoRedoButtons();
+  } catch (error) {
+    console.error('Undo failed:', error);
+    showToast('Undo failed', 'error');
+  }
+}
+
+// Redo last undone action
+async function redo() {
+  if (historyIndex >= historyStack.length - 1) {
+    showToast('Nothing to redo', 'info');
+    return;
+  }
+
+  historyIndex++;
+  const action = historyStack[historyIndex];
+
+  try {
+    switch (action.type) {
+      case 'CREATE_EVENT':
+        // Redo create
+        const { data: created, error: createError } = await supabase.createEvent(action.event);
+        if (!createError && created) {
+          events.push(created);
+          showToast(`Redone: Created "${action.event.title}"`, 'info');
+        }
+        break;
+
+      case 'UPDATE_EVENT':
+        // Redo update
+        const { error: updateError } = await supabase.updateEvent(action.event.id, action.event);
+        if (!updateError) {
+          const index = events.findIndex(e => e.id === action.event.id);
+          if (index !== -1) {
+            events[index] = action.event;
+          }
+          showToast(`Redone: Edit to "${action.event.title}"`, 'info');
+        }
+        break;
+
+      case 'DELETE_EVENT':
+        // Redo delete
+        await supabase.deleteEvent(action.event.id);
+        events = events.filter(e => e.id !== action.event.id);
+        showToast(`Redone: Deleted "${action.event.title}"`, 'info');
+        break;
+    }
+
+    refreshTimeline();
+    updateUndoRedoButtons();
+  } catch (error) {
+    console.error('Redo failed:', error);
+    showToast('Redo failed', 'error');
+  }
+}
+
+// Update undo/redo button states
+function updateUndoRedoButtons() {
+  const undoBtn = document.getElementById('undo-btn');
+  const redoBtn = document.getElementById('redo-btn');
+
+  if (undoBtn) {
+    undoBtn.disabled = historyIndex < 0;
+    undoBtn.style.opacity = historyIndex < 0 ? '0.5' : '1';
+  }
+
+  if (redoBtn) {
+    redoBtn.disabled = historyIndex >= historyStack.length - 1;
+    redoBtn.style.opacity = historyIndex >= historyStack.length - 1 ? '0.5' : '1';
+  }
 }
 
 // Export timeline to PDF
