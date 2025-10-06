@@ -41,7 +41,7 @@ class InvitationService {
         return { success: false, error: errorData.error || 'Failed to send invitation' }
       }
 
-      const result = await response.json()
+      await response.json()
       return { success: true }
 
     } catch (error) {

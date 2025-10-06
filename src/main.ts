@@ -736,7 +736,7 @@ async function showAISuggestionsModal() {
 
   try {
     // Call Claude AI to analyze transcript
-    const result = await claudeService.suggestEventFromTranscript(recordedTranscript);
+    const result = await claude.suggestEventFromTranscript(recordedTranscript);
 
     if (result.error) {
       showToast(result.error, 'error');
@@ -759,7 +759,7 @@ async function showAISuggestionsModal() {
     if (dateEl && result.date) dateEl.textContent = result.date;
     if (descEl && result.description) descEl.textContent = result.description;
     if (tagsEl && result.tags) {
-      tagsEl.innerHTML = result.tags.map(tag => `<span class="tag">${tag}</span>`).join('');
+      tagsEl.innerHTML = result.tags.map((tag: string) => `<span class="tag">${tag}</span>`).join('');
     }
 
     // Store suggestions for later

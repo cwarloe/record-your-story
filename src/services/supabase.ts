@@ -19,6 +19,19 @@ class SupabaseService {
     this.client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   }
 
+  // Expose Supabase client methods for services that need direct access
+  get auth() {
+    return this.client.auth;
+  }
+
+  from(table: string) {
+    return this.client.from(table);
+  }
+
+  rpc(fn: string, params?: any) {
+    return this.client.rpc(fn, params);
+  }
+
   // Auth methods
   async signUp(email: string, password: string) {
     console.log('Attempting sign up with:', email);
