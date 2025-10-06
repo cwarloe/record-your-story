@@ -4,7 +4,7 @@ import Quill from 'quill';
 import 'quill/dist/quill.snow.css';
 import './style.css';
 import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import 'jspdf-autotable';
 
 // App state
 let currentUser: User | null = null;
@@ -41,7 +41,8 @@ const MAX_HISTORY = 50;
 // Initialize app
 async function init() {
   // Check for existing session
-  currentUser = await supabase.getCurrentUser();
+  const user = await supabase.getCurrentUser();
+  currentUser = user as User | null;
 
   if (currentUser) {
     await loadUserData();
@@ -52,7 +53,7 @@ async function init() {
 
   // Listen for auth changes
   supabase.onAuthStateChange(async (user) => {
-    currentUser = user;
+    currentUser = user as User | null;
     if (user) {
       await loadUserData();
       showApp();
@@ -874,7 +875,8 @@ async function handleSignUp() {
     if (data?.user?.email_confirmed_at || data?.session) {
       showMessage('Account created! Signing you in...', 'success');
       // User is auto-confirmed and signed in
-      currentUser = await supabase.getCurrentUser();
+      const user = await supabase.getCurrentUser();
+      currentUser = user as User | null;
       if (currentUser) {
         await loadUserData();
         showApp();
@@ -1183,7 +1185,6 @@ function hideCreateTimelineModal() {
 async function handleCreateTimeline(e: Event) {
   e.preventDefault();
 
-  const form = e.target as HTMLFormElement;
   const nameInput = document.getElementById('timeline-name') as HTMLInputElement;
   const typeSelect = document.getElementById('timeline-type') as HTMLSelectElement;
 
@@ -1406,8 +1407,8 @@ async function redo() {
 
 // Update undo/redo button states
 function updateUndoRedoButtons() {
-  const undoBtn = document.getElementById('undo-btn');
-  const redoBtn = document.getElementById('redo-btn');
+  const undoBtn = document.getElementById('undo-btn') as HTMLButtonElement | null;
+  const redoBtn = document.getElementById('redo-btn') as HTMLButtonElement | null;
 
   if (undoBtn) {
     undoBtn.disabled = historyIndex < 0;

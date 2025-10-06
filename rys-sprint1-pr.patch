@@ -1,0 +1,258 @@
+--- /mnt/data/rys-local/record-your-story/README.md
++++ /mnt/data/rys-local-mod/record-your-story/README.md
+@@ -150,3 +150,19 @@
+ **Status**: Production Ready ✅
+ 
+ Start preserving your story today! 📖✨
++
++
++## Sprint 1 (v1.1): Timeline + Print
++
++This sprint adds a TypeScript timeline component with a List/Timeline toggle and a clean print stylesheet.
++
++- TS sources: `src/feature/timeline.ts`, `src/feature/types.ts`, `src/feature/timeline.css`
++- Print stylesheet: `public/print.css`
++- Demo: `examples/timeline-demo/index.html` (open with a static server)
++
++Quick preview:
++
++```bash
++python -m http.server --directory examples/timeline-demo 8000
++# then open http://localhost:8000
++```
+--- /dev/null
++++ /mnt/data/rys-local-mod/record-your-story/examples/timeline-demo/index.html
++<!doctype html>
++<html lang="en">
++<head>
++  <meta charset="utf-8" />
++  <title>Record Your Story — Timeline Demo</title>
++  <meta name="viewport" content="width=device-width, initial-scale=1" />
++  <link href="../../src/feature/timeline.css" rel="stylesheet" />
++  <link href="../../public/print.css" rel="stylesheet" media="print" />
++  <style> body{max-width:1000px;margin:2rem auto;padding:0 1rem;} </style>
++</head>
++<body>
++  <h1>Record Your Story — Timeline Demo</h1>
++  <p class="no-print">Toggle views and try Print Preview (Ctrl/Cmd+P).</p>
++  <div id="app"></div>
++
++  <script type="module">
++    import { initRecordYourStory } from "../../src/feature/timeline.ts";
++    fetch("./timeline.sample.json")
++      .then(r => r.json())
++      .then(data => initRecordYourStory(document.getElementById("app"), data));
++  </script>
++</body>
++</html>
+--- /dev/null
++++ /mnt/data/rys-local-mod/record-your-story/examples/timeline-demo/timeline.sample.json
++{
++  "entries": [
++    { "id":"1", "title":"Started journaling", "description":"Committing to record my story weekly.", "dateISO":"2024-01-14", "tags":["habits"] },
++    { "id":"2", "title":"Baptism anniversary", "description":"Reflected on John 15 and abiding.", "dateISO":"2024-05-12", "tags":["faith"] },
++    { "id":"3", "title":"Taught workshop", "description":"Adult learning strategies in cybersecurity.", "dateISO":"2024-10-01", "tags":["work","training"] }
++  ]
++}
+--- /mnt/data/rys-local/record-your-story/package.json
++++ /mnt/data/rys-local-mod/record-your-story/package.json
+@@ -7,7 +7,8 @@
+     "dev": "vite",
+     "build": "tsc && vite build",
+     "preview": "vite preview",
+-    "test": "echo \"Error: no test specified\" && exit 1"
++    "test": "echo \"Error: no test specified\" && exit 1",
++    "demo:timeline": "python -m http.server --directory examples/timeline-demo 8000"
+   },
+   "repository": {
+     "type": "git",
+@@ -30,4 +31,4 @@
+     "@types/quill": "^2.0.14",
+     "quill": "^2.0.3"
+   }
+-}
++}--- /dev/null
++++ /mnt/data/rys-local-mod/record-your-story/public/print.css
++/* Dedicated print stylesheet; include with media="print" */
++@page { margin: 20mm; }
++
++body { font-size: 12pt; color: #000; }
++header, nav, footer, .no-print { display: none !important; }
++
++.rys-year { break-before: page; }
++.rys-card, .rys-tl-card { box-shadow: none !important; border-color: #777 !important; }
++
++/* Avoid single lines at top/bottom of pages */
++p, li, h2, h3 { orphans: 3; widows: 3; }
+--- /dev/null
++++ /mnt/data/rys-local-mod/record-your-story/src/feature/timeline.css
++/* Core timeline styles (responsive) */
++.rys-container { --gap: 1rem; --line: 3px; --card-bg: #fff; --card-shadow: 0 2px 10px rgba(0,0,0,.07); }
++.rys-container { font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif; color:#111; }
++.rys-toolbar { display:flex; gap:.5rem; align-items:center; margin: 1rem 0; }
++.rys-toolbar button { border:1px solid #ccc; background:#f9f9f9; padding:.4rem .7rem; border-radius:.5rem; cursor:pointer; }
++.rys-toolbar button[aria-pressed="true"] { background:#e8f0fe; border-color:#8ab4f8; }
++
++.rys-year { margin: 2rem 0 1rem; font-size:1.25rem; font-weight:700; border-bottom:1px solid #e5e7eb; padding-bottom:.25rem; }
++
++.rys-list .rys-card { border:1px solid #eee; border-radius:.75rem; background: var(--card-bg); box-shadow: var(--card-shadow); padding:1rem; margin:.75rem 0; }
++
++.rys-timeline { position:relative; margin: 1.5rem 0; }
++.rys-timeline::before { content:""; position:absolute; left: calc(50% - var(--line)/2); top:0; bottom:0; width: var(--line); background:#e5e7eb; }
++.rys-tl-row { display:grid; grid-template-columns: 1fr 1fr; gap: var(--gap); align-items:stretch; margin: 1rem 0; }
++.rys-tl-card { border:1px solid #eee; border-radius:.75rem; background: var(--card-bg); box-shadow: var(--card-shadow); padding:1rem; }
++.rys-tl-card.left { grid-column:1; }
++.rys-tl-card.right { grid-column:2; }
++.rys-tl-dot { position:absolute; left: calc(50% - .5rem); width:1rem; height:1rem; background:#111; border-radius:999px; transform: translateY(.6rem); }
++
++@media (max-width: 900px) {
++  .rys-timeline::before { left: .5rem; }
++  .rys-tl-row { grid-template-columns: 1rem 1fr; }
++  .rys-tl-card.left, .rys-tl-card.right { grid-column: 2; }
++  .rys-tl-dot { left: .25rem; }
++}
++
++/* Print-friendly defaults */
++@media print {
++  body { color: #000; }
++  .rys-toolbar { display:none !important; }
++  .rys-timeline::before { background:#000; }
++  .rys-tl-card, .rys-list .rys-card { box-shadow:none; border-color:#999; }
++  .rys-year { break-before: page; } /* Start new page per year */
++}
+--- /dev/null
++++ /mnt/data/rys-local-mod/record-your-story/src/feature/timeline.ts
++import type { TimelineData, TimelineEntry } from "./types";
++
++export interface InitOptions {
++  defaultView?: "list" | "timeline";
++  persistKey?: string; // localStorage key
++}
++
++export function initRecordYourStory(container: HTMLElement, data: TimelineData, options: InitOptions = {}): void {
++  const persistKey = options.persistKey ?? "rys:view";
++  const initial = (localStorage.getItem(persistKey) as "list"|"timeline") ?? (options.defaultView ?? "timeline");
++  const state = { view: initial };
++  const years = groupByYear(data.entries ?? []);
++  container.classList.add("rys-container");
++
++  // toolbar
++  const bar = document.createElement("div");
++  bar.className = "rys-toolbar";
++  const btnList = mkButton("List");
++  const btnTimeline = mkButton("Timeline");
++  bar.append(btnList, btnTimeline);
++  container.append(bar);
++
++  function render() {
++    btnList.setAttribute("aria-pressed", String(state.view === "list"));
++    btnTimeline.setAttribute("aria-pressed", String(state.view === "timeline"));
++    try { localStorage.setItem(persistKey, state.view); } catch {}
++
++    // clear existing content (except toolbar)
++    container.querySelectorAll(".rys-content").forEach(n => n.remove());
++    if (state.view === "list") renderList(container, years);
++    else renderTimeline(container, years);
++  }
++
++  btnList.addEventListener("click", () => { state.view = "list"; render(); });
++  btnTimeline.addEventListener("click", () => { state.view = "timeline"; render(); });
++
++  render();
++}
++
++function mkButton(label: string): HTMLButtonElement {
++  const b = document.createElement("button");
++  b.type = "button";
++  b.textContent = label;
++  return b;
++}
++
++function groupByYear(entries: TimelineEntry[]): Array<{year: string, items: TimelineEntry[]}> {
++  const by = new Map<string, TimelineEntry[]>();
++  entries
++    .slice()
++    .sort((a,b) => (a.dateISO || "").localeCompare(b.dateISO || ""))
++    .forEach(e => {
++      const y = (e.dateISO || "").slice(0,4) || "Unknown";
++      if (!by.has(y)) by.set(y, []);
++      by.get(y)!.push(e);
++    });
++  return Array.from(by.entries())
++    .sort((a,b) => a[0].localeCompare(b[0]))
++    .map(([year, items]) => ({year, items}));
++}
++
++function renderList(root: HTMLElement, years: Array<{year: string, items: TimelineEntry[]}>): void {
++  const wrap = document.createElement("div");
++  wrap.className = "rys-content rys-list";
++  years.forEach(({year, items}) => {
++    const h = document.createElement("h2");
++    h.className = "rys-year";
++    h.textContent = year;
++    wrap.appendChild(h);
++    items.forEach(it => wrap.appendChild(card(it, "rys-card")));
++  });
++  root.appendChild(wrap);
++}
++
++function renderTimeline(root: HTMLElement, years: Array<{year: string, items: TimelineEntry[]}>): void {
++  const wrap = document.createElement("div");
++  wrap.className = "rys-content rys-timeline";
++  years.forEach(({year, items}, idx) => {
++    const h = document.createElement("h2");
++    h.className = "rys-year";
++    h.textContent = year;
++    wrap.appendChild(h);
++
++    items.forEach((it, i) => {
++      const row = document.createElement("div");
++      row.className = "rys-tl-row";
++      const dot = document.createElement("div");
++      dot.className = "rys-tl-dot";
++      row.appendChild(dot);
++      const side = ((i + idx) % 2 === 0) ? "left" : "right";
++      row.appendChild(card(it, "rys-tl-card " + side));
++      wrap.appendChild(row);
++    });
++  });
++  root.appendChild(wrap);
++}
++
++function card(it: TimelineEntry, cls: string): HTMLElement {
++  const c = document.createElement("article");
++  c.className = cls;
++  const t = document.createElement("h3");
++  t.textContent = it.title || "(Untitled)";
++  const p = document.createElement("p");
++  p.textContent = it.description || "";
++  const d = document.createElement("div");
++  d.style.fontSize = "0.9rem";
++  d.style.opacity = "0.7";
++  d.textContent = fmtDate(it.dateISO);
++  c.append(t, d, p);
++  return c;
++}
++
++function fmtDate(iso?: string): string {
++  if (!iso) return "";
++  try {
++    const dt = new Date(iso);
++    return dt.toLocaleDateString(undefined, {year:"numeric", month:"short", day:"2-digit"});
++  } catch {
++    return iso ?? "";
++  }
++}
++
++export default initRecordYourStory;
+--- /dev/null
++++ /mnt/data/rys-local-mod/record-your-story/src/feature/types.ts
++export interface TimelineEntry {
++  id: string;
++  title: string;
++  description?: string;
++  dateISO: string; // YYYY-MM-DD
++  tags?: string[];
++}
++export interface TimelineData { entries: TimelineEntry[]; }
++export type TimelineView = "list" | "timeline";

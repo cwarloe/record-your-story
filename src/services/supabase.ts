@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import type { User, TimelineEvent, Timeline, EventPhoto } from '@/types';
+import type { TimelineEvent, Timeline } from '@/types';
 
 // Supabase configuration
 // TODO: Replace with actual Supabase project credentials
@@ -56,13 +56,13 @@ class SupabaseService {
   }
 
   onAuthStateChange(callback: (user: any) => void) {
-    return this.client.auth.onAuthStateChange((event, session) => {
+    return this.client.auth.onAuthStateChange((_event, session) => {
       callback(session?.user ?? null);
     });
   }
 
   // Event methods
-  async createEvent(event: Omit<Event, 'id' | 'created_at' | 'updated_at'>) {
+  async createEvent(event: Omit<TimelineEvent, 'id' | 'created_at' | 'updated_at'>) {
     const { data, error } = await this.client
       .from('events')
       .insert([event])
