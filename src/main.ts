@@ -73,6 +73,12 @@ async function loadUserData() {
   }
 
   try {
+    // Ensure user record exists in public.users
+    const authUser = await supabase.getCurrentUser();
+    if (authUser) {
+      await supabase.ensureUserRecord(authUser);
+    }
+
     // Get user's timelines
     const { data: timelines, error: timelineError } = await supabase.getUserTimelines(currentUser.id);
 
@@ -226,7 +232,10 @@ function showApp() {
       <main class="app-main">
         <div class="timeline-header">
           <h2>${currentTimeline?.name || 'My Story'}</h2>
-          <button id="add-event-btn" class="btn btn-primary">+ Add Event</button>
+          <div class="timeline-actions">
+            <button id="share-timeline-btn" class="btn btn-secondary btn-small" title="Share Timeline">👥 Share</button>
+            <button id="add-event-btn" class="btn btn-primary">+ Add Event</button>
+          </div>
         </div>
 
         <div class="search-filter-bar">
@@ -304,6 +313,7 @@ function showApp() {
     // Timeline switcher listeners
     document.getElementById('timeline-select')?.addEventListener('change', handleTimelineSwitch);
     document.getElementById('new-timeline-btn')?.addEventListener('click', showCreateTimelineModal);
+    document.getElementById('share-timeline-btn')?.addEventListener('click', showShareTimelineModal);
 
     // Export listener
     document.getElementById('export-pdf-btn')?.addEventListener('click', exportToPDF);
@@ -1578,6 +1588,153 @@ function hideKeyboardShortcuts() {
   const modal = document.getElementById('shortcuts-modal');
   if (modal) {
     modal.remove();
+  }
+}
+
+// Collaboration features
+async function showShareTimelineModal() {
+  if (!currentTimeline || !currentUser) return;
+
+  const app = document.getElementById('app');
+  if (!app) return;
+
+  // Load current shares
+  const { data: shares } = await supabase.getTimelineShares(currentTimeline.id);
+
+  const modalHtml = `
+    <div id="share-modal" class="modal">
+      <div class="modal-overlay"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>👥 Share "${currentTimeline.name}"</h3>
+          <button id="share-modal-close" class="modal-close">&times;</button>
+        </div>
+
+        <div class="share-form">
+          <h4>Invite User by Email</h4>
+          <form id="invite-form">
+            <input type="email" id="invite-email" placeholder="user@example.com" required />
+            <select id="invite-permission" required>
+              <option value="view">View Only</option>
+              <option value="edit">Can Edit</option>
+              <option value="admin">Admin</option>
+            </select>
+            <button type="submit" class="btn btn-primary btn-small">Send Invitation</button>
+          </form>
+          <p class="help-text">User must have an account to receive invitations</p>
+        </div>
+
+        <div class="shared-users">
+          <h4>Shared With</h4>
+          <div id="shares-list">
+            ${shares && shares.length > 0
+              ? shares.map((share: any) => `
+                <div class="share-item" data-share-id="${share.id}">
+                  <div class="share-info">
+                    <span class="share-email">${share.user.email}</span>
+                    <select class="share-permission" data-share-id="${share.id}">
+                      <option value="view" ${share.permission_level === 'view' ? 'selected' : ''}>View Only</option>
+                      <option value="edit" ${share.permission_level === 'edit' ? 'selected' : ''}>Can Edit</option>
+                      <option value="admin" ${share.permission_level === 'admin' ? 'selected' : ''}>Admin</option>
+                    </select>
+                  </div>
+                  <button class="btn-icon remove-share" data-share-id="${share.id}" title="Remove access">🗑️</button>
+                </div>
+              `).join('')
+              : '<p class="empty-text">Not shared with anyone yet</p>'
+            }
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button id="share-modal-done" class="btn btn-primary">Done</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  app.insertAdjacentHTML('beforeend', modalHtml);
+
+  // Event listeners
+  document.getElementById('share-modal-close')?.addEventListener('click', hideShareTimelineModal);
+  document.getElementById('share-modal-done')?.addEventListener('click', hideShareTimelineModal);
+  document.querySelector('#share-modal .modal-overlay')?.addEventListener('click', hideShareTimelineModal);
+  document.getElementById('invite-form')?.addEventListener('submit', handleInviteUser);
+
+  // Permission change listeners
+  document.querySelectorAll('.share-permission').forEach(select => {
+    select.addEventListener('change', async (e) => {
+      const target = e.target as HTMLSelectElement;
+      const shareId = target.dataset.shareId;
+      const newPermission = target.value as 'view' | 'edit' | 'admin';
+
+      if (shareId) {
+        const { error } = await supabase.updateSharePermission(shareId, newPermission);
+        if (error) {
+          showToast('Failed to update permission', 'error');
+        } else {
+          showToast('Permission updated', 'success');
+        }
+      }
+    });
+  });
+
+  // Remove share listeners
+  document.querySelectorAll('.remove-share').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const target = e.currentTarget as HTMLElement;
+      const shareId = target.dataset.shareId;
+
+      if (shareId && confirm('Remove this user\'s access to the timeline?')) {
+        const { error } = await supabase.removeTimelineShare(shareId);
+        if (error) {
+          showToast('Failed to remove access', 'error');
+        } else {
+          showToast('Access removed', 'success');
+          // Refresh modal
+          hideShareTimelineModal();
+          showShareTimelineModal();
+        }
+      }
+    });
+  });
+}
+
+function hideShareTimelineModal() {
+  const modal = document.getElementById('share-modal');
+  if (modal) {
+    modal.remove();
+  }
+}
+
+async function handleInviteUser(e: Event) {
+  e.preventDefault();
+
+  if (!currentTimeline || !currentUser) return;
+
+  const emailInput = document.getElementById('invite-email') as HTMLInputElement;
+  const permissionSelect = document.getElementById('invite-permission') as HTMLSelectElement;
+
+  const email = emailInput.value.trim();
+  const permission = permissionSelect.value as 'view' | 'edit' | 'admin';
+
+  if (!email) return;
+
+  const { error } = await supabase.inviteUserToTimeline(
+    currentTimeline.id,
+    email,
+    permission,
+    currentUser.id
+  );
+
+  if (error) {
+    showToast(error.message || 'Failed to send invitation', 'error');
+  } else {
+    showToast('Invitation sent!', 'success');
+    emailInput.value = '';
+    // Refresh modal
+    hideShareTimelineModal();
+    showShareTimelineModal();
   }
 }
 

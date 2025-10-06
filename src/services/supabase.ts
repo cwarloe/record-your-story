@@ -55,6 +55,31 @@ class SupabaseService {
     return user;
   }
 
+  async ensureUserRecord(authUser: any) {
+    // Check if user record exists in public.users
+    const { data: existingUser } = await this.client
+      .from('users')
+      .select('id')
+      .eq('id', authUser.id)
+      .single();
+
+    if (!existingUser) {
+      // Create user record
+      const { error } = await this.client
+        .from('users')
+        .insert([{
+          id: authUser.id,
+          email: authUser.email,
+          name: authUser.user_metadata?.name || null,
+          avatar_url: authUser.user_metadata?.avatar_url || null
+        }]);
+
+      if (error) {
+        console.error('Error creating user record:', error);
+      }
+    }
+  }
+
   onAuthStateChange(callback: (user: any) => void) {
     return this.client.auth.onAuthStateChange((_event, session) => {
       callback(session?.user ?? null);
@@ -186,6 +211,115 @@ class SupabaseService {
         callback
       )
       .subscribe();
+  }
+
+  // Collaboration methods
+  async inviteUserToTimeline(timeline_id: string, email: string, permission_level: 'view' | 'edit' | 'admin', invited_by: string) {
+    // First, check if user exists with this email
+    const { data: users, error: userError } = await this.client
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .single();
+
+    if (userError || !users) {
+      return { data: null, error: { message: 'User not found with this email. They need to sign up first.' } };
+    }
+
+    // Create invitation
+    const { data, error } = await this.client
+      .from('shared_timelines')
+      .insert([{
+        timeline_id,
+        user_id: users.id,
+        permission_level,
+        invited_by,
+        accepted: false
+      }])
+      .select()
+      .single();
+
+    return { data, error };
+  }
+
+  async getTimelineInvitations(user_id: string) {
+    const { data, error } = await this.client
+      .from('shared_timelines')
+      .select(`
+        *,
+        timeline:timelines(name, type),
+        inviter:users!invited_by(email)
+      `)
+      .eq('user_id', user_id)
+      .eq('accepted', false);
+
+    return { data, error };
+  }
+
+  async acceptTimelineInvitation(share_id: string) {
+    const { data, error } = await this.client
+      .from('shared_timelines')
+      .update({ accepted: true })
+      .eq('id', share_id)
+      .select()
+      .single();
+
+    return { data, error };
+  }
+
+  async declineTimelineInvitation(share_id: string) {
+    const { error } = await this.client
+      .from('shared_timelines')
+      .delete()
+      .eq('id', share_id);
+
+    return { error };
+  }
+
+  async getTimelineShares(timeline_id: string) {
+    const { data, error } = await this.client
+      .from('shared_timelines')
+      .select(`
+        *,
+        user:users(email)
+      `)
+      .eq('timeline_id', timeline_id)
+      .eq('accepted', true);
+
+    return { data, error };
+  }
+
+  async removeTimelineShare(share_id: string) {
+    const { error } = await this.client
+      .from('shared_timelines')
+      .delete()
+      .eq('id', share_id);
+
+    return { error };
+  }
+
+  async updateSharePermission(share_id: string, permission_level: 'view' | 'edit' | 'admin') {
+    const { data, error } = await this.client
+      .from('shared_timelines')
+      .update({ permission_level })
+      .eq('id', share_id)
+      .select()
+      .single();
+
+    return { data, error };
+  }
+
+  async getSharedTimelines(user_id: string) {
+    const { data, error } = await this.client
+      .from('shared_timelines')
+      .select(`
+        *,
+        timeline:timelines(*)
+      `)
+      .eq('user_id', user_id)
+      .eq('accepted', true);
+
+    return { data, error };
   }
 }
 

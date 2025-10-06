@@ -1065,6 +1065,95 @@ kbd {
   border-top: 1px solid var(--border);
 }
 
+/* Collaboration / Share Modal */
+.timeline-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
+.share-form {
+  padding: var(--spacing-md);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.share-form h4 {
+  margin-top: 0;
+  margin-bottom: var(--spacing-md);
+  color: var(--text-primary);
+}
+
+.share-form form {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+}
+
+.share-form input[type="email"] {
+  flex: 1;
+}
+
+.share-form select {
+  min-width: 120px;
+}
+
+.help-text {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.shared-users h4 {
+  margin-top: 0;
+  margin-bottom: var(--spacing-md);
+  color: var(--text-primary);
+}
+
+.share-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-sm);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--spacing-sm);
+}
+
+.share-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex: 1;
+}
+
+.share-email {
+  flex: 1;
+  font-weight: 500;
+}
+
+.share-permission {
+  min-width: 120px;
+  padding: 0.25rem 0.5rem;
+  font-size: var(--font-size-sm);
+}
+
+.remove-share {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  font-size: 1.2rem;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.remove-share:hover {
+  opacity: 1;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .app-header {
