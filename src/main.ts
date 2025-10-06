@@ -18,15 +18,53 @@ let currentPhotos: string[] = [];
 let editingEventId: string | null = null;
 let currentConnections: string[] = []; // Event IDs to connect
 
-// AI / Voice state (v2.3.0) - Ready for full implementation
-// Check if Claude AI is available
+// AI / Voice state (v2.3.0)
 if (claude.isEnabled()) {
   console.log('🤖 AI features enabled');
 }
-// Web Speech API initialization (to be implemented)
-// let recognition: any = null;
-// let isRecording = false;
-// let recordedTranscript = '';
+
+// Web Speech API
+let recognition: any = null;
+let isRecording = false;
+let recordedTranscript = '';
+
+// Initialize Web Speech API
+function initSpeechRecognition() {
+  const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+
+  if (!SpeechRecognition) {
+    console.warn('Web Speech API not supported in this browser');
+    return false;
+  }
+
+  recognition = new SpeechRecognition();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.lang = 'en-US';
+
+  recognition.onresult = (event: any) => {
+    let transcript = '';
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      transcript += event.results[i][0].transcript;
+    }
+    recordedTranscript = transcript;
+    updateTranscriptDisplay();
+  };
+
+  recognition.onerror = (event: any) => {
+    console.error('Speech recognition error:', event.error);
+    stopRecording();
+    showToast(`Recording error: ${event.error}`, 'error');
+  };
+
+  recognition.onend = () => {
+    if (isRecording) {
+      recognition.start(); // Restart if still recording
+    }
+  };
+
+  return true;
+}
 
 // Filter state
 let searchQuery = '';
@@ -276,6 +314,14 @@ function showApp() {
             <input type="date" id="event-date" required />
 
             <label>Description</label>
+            <div class="voice-recording-section">
+              <button type="button" id="voice-record-btn" class="btn btn-secondary btn-small">🎤 Record Story</button>
+              <div id="recording-indicator" class="recording-indicator" style="display: none;">
+                <span class="pulse-dot"></span>
+                <span>Recording...</span>
+              </div>
+            </div>
+            <div id="transcript-display" class="transcript-display" style="display: none;"></div>
             <div id="editor-container"></div>
 
             <label>Photos</label>
@@ -305,6 +351,50 @@ function showApp() {
               <button type="button" id="cancel-btn" class="btn btn-secondary">Cancel</button>
             </div>
           </form>
+        </div>
+      </div>
+
+      <div id="ai-suggestions-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3>🤖 AI Event Suggestions</h3>
+            <button id="ai-modal-close" class="modal-close">&times;</button>
+          </div>
+          <div class="ai-suggestions-content">
+            <p class="transcript-label">Your story:</p>
+            <div id="ai-transcript" class="ai-transcript"></div>
+
+            <div id="ai-loading" class="ai-loading">
+              <div class="spinner"></div>
+              <p>Analyzing your story...</p>
+            </div>
+
+            <div id="ai-suggestions" class="ai-suggestions" style="display: none;">
+              <h4>Suggested Event Details:</h4>
+              <div class="suggestion-field">
+                <label>Title:</label>
+                <p id="suggested-title"></p>
+              </div>
+              <div class="suggestion-field">
+                <label>Date:</label>
+                <p id="suggested-date"></p>
+              </div>
+              <div class="suggestion-field">
+                <label>Description:</label>
+                <p id="suggested-description"></p>
+              </div>
+              <div class="suggestion-field">
+                <label>Tags:</label>
+                <div id="suggested-tags" class="tags-display"></div>
+              </div>
+            </div>
+
+            <div class="modal-actions">
+              <button type="button" id="accept-suggestions-btn" class="btn btn-primary" style="display: none;">✓ Accept & Fill Form</button>
+              <button type="button" id="reject-suggestions-btn" class="btn btn-secondary">Cancel</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -498,6 +588,170 @@ function renderTimeline(): string {
   return html;
 }
 
+// Voice recording functions
+function startRecording() {
+  if (!recognition) {
+    const initialized = initSpeechRecognition();
+    if (!initialized) {
+      showToast('Voice recording not supported in this browser. Try Chrome or Edge.', 'error');
+      return;
+    }
+  }
+
+  try {
+    recordedTranscript = '';
+    isRecording = true;
+    recognition.start();
+    updateRecordingUI(true);
+    showToast('🎤 Recording started...', 'info');
+  } catch (error) {
+    console.error('Failed to start recording:', error);
+    showToast('Failed to start recording', 'error');
+    isRecording = false;
+  }
+}
+
+function stopRecording() {
+  if (recognition && isRecording) {
+    isRecording = false;
+    recognition.stop();
+    updateRecordingUI(false);
+    showToast('Recording stopped', 'info');
+
+    // If we have a transcript, offer AI suggestions
+    if (recordedTranscript.trim().length > 20) {
+      showAISuggestionsModal();
+    } else {
+      showToast('Transcript too short. Try recording again.', 'error');
+    }
+  }
+}
+
+function updateRecordingUI(recording: boolean) {
+  const btn = document.getElementById('voice-record-btn');
+  const indicator = document.getElementById('recording-indicator');
+
+  if (btn) {
+    btn.textContent = recording ? '⏹️ Stop Recording' : '🎤 Record Story';
+    btn.classList.toggle('recording', recording);
+  }
+
+  if (indicator) {
+    indicator.style.display = recording ? 'flex' : 'none';
+  }
+}
+
+function updateTranscriptDisplay() {
+  const display = document.getElementById('transcript-display');
+  if (display) {
+    display.textContent = recordedTranscript;
+    display.style.display = recordedTranscript ? 'block' : 'none';
+  }
+}
+
+// Show AI suggestions modal
+async function showAISuggestionsModal() {
+  const modal = document.getElementById('ai-suggestions-modal');
+  if (!modal) return;
+
+  modal.classList.remove('hidden');
+
+  // Display transcript
+  const transcriptEl = document.getElementById('ai-transcript');
+  if (transcriptEl) {
+    transcriptEl.textContent = recordedTranscript;
+  }
+
+  // Show loading state
+  const loadingEl = document.getElementById('ai-loading');
+  const suggestionsEl = document.getElementById('ai-suggestions');
+  const acceptBtn = document.getElementById('accept-suggestions-btn');
+
+  if (loadingEl) loadingEl.style.display = 'block';
+  if (suggestionsEl) suggestionsEl.style.display = 'none';
+  if (acceptBtn) acceptBtn.style.display = 'none';
+
+  try {
+    // Call Claude AI to analyze transcript
+    const result = await claudeService.suggestEventFromTranscript(recordedTranscript);
+
+    if (result.error) {
+      showToast(result.error, 'error');
+      hideAISuggestionsModal();
+      return;
+    }
+
+    // Hide loading, show suggestions
+    if (loadingEl) loadingEl.style.display = 'none';
+    if (suggestionsEl) suggestionsEl.style.display = 'block';
+    if (acceptBtn) acceptBtn.style.display = 'block';
+
+    // Display suggestions
+    const titleEl = document.getElementById('suggested-title');
+    const dateEl = document.getElementById('suggested-date');
+    const descEl = document.getElementById('suggested-description');
+    const tagsEl = document.getElementById('suggested-tags');
+
+    if (titleEl && result.title) titleEl.textContent = result.title;
+    if (dateEl && result.date) dateEl.textContent = result.date;
+    if (descEl && result.description) descEl.textContent = result.description;
+    if (tagsEl && result.tags) {
+      tagsEl.innerHTML = result.tags.map(tag => `<span class="tag">${tag}</span>`).join('');
+    }
+
+    // Store suggestions for later
+    (window as any).__aiSuggestions = result;
+
+  } catch (error) {
+    console.error('AI suggestions failed:', error);
+    showToast('AI analysis failed. Please try again.', 'error');
+    hideAISuggestionsModal();
+  }
+
+  // Event listeners
+  document.getElementById('ai-modal-close')?.addEventListener('click', hideAISuggestionsModal);
+  document.getElementById('reject-suggestions-btn')?.addEventListener('click', hideAISuggestionsModal);
+  document.getElementById('accept-suggestions-btn')?.addEventListener('click', acceptAISuggestions);
+  document.querySelector('#ai-suggestions-modal .modal-overlay')?.addEventListener('click', hideAISuggestionsModal);
+}
+
+// Hide AI suggestions modal
+function hideAISuggestionsModal() {
+  const modal = document.getElementById('ai-suggestions-modal');
+  if (modal) {
+    modal.classList.add('hidden');
+  }
+}
+
+// Accept AI suggestions and fill event form
+function acceptAISuggestions() {
+  const suggestions = (window as any).__aiSuggestions;
+  if (!suggestions) return;
+
+  // Close AI modal
+  hideAISuggestionsModal();
+
+  // Fill the event form
+  if (suggestions.title) {
+    (document.getElementById('event-title') as HTMLInputElement).value = suggestions.title;
+  }
+
+  if (suggestions.date) {
+    (document.getElementById('event-date') as HTMLInputElement).value = suggestions.date;
+  }
+
+  if (suggestions.description && quill) {
+    quill.setText(suggestions.description);
+  }
+
+  if (suggestions.tags) {
+    currentTags = [...suggestions.tags];
+    renderTags();
+  }
+
+  showToast('✓ Form filled with AI suggestions', 'success');
+}
+
 // Show event modal (for create or edit)
 function showEventModal(eventId?: string) {
   const modal = document.getElementById('event-modal');
@@ -578,6 +832,15 @@ function showEventModal(eventId?: string) {
   document.getElementById('photo-upload')?.addEventListener('change', handlePhotoUpload);
   document.getElementById('add-connection-btn')?.addEventListener('click', showConnectionPicker);
   document.querySelector('.modal-overlay')?.addEventListener('click', hideEventModal);
+
+  // Voice recording listener
+  document.getElementById('voice-record-btn')?.addEventListener('click', () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  });
 
   // Drag & drop listeners
   setupDragAndDrop();
