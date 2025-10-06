@@ -1,152 +1,344 @@
-# Record Your Story v1.0
+# 🤖 Record Your Story v2.0
+### Your memories, powered by AI
 
-**Record Your Story** is a personal timeline application for documenting and organizing your life events with rich formatting, photos, and tags. Keep your memories safe with local-first storage that puts you in control of your data.
+> **A personal timeline application that uses Claude AI to transform how you capture and share life's moments.**
 
-## ✨ Features
+[![Live Demo](https://img.shields.io/badge/🚀-Live%20Demo-7266FF)](https://record-your-story.onrender.com)
+[![Version](https://img.shields.io/badge/version-2.3.0--alpha-blue)](https://github.com/cwarloe/record-your-story/releases)
+[![License](https://img.shields.io/badge/license-ISC-green)](LICENSE)
 
-- **📝 Rich Event Creation** - Add life events with titles, dates, and formatted descriptions
-- **🎨 Rich Text Editor** - Format your stories with bold, italic, lists, and links
-- **📸 Photo Uploads** - Attach up to 5 photos per event (unlimited storage via IndexedDB)
-- **🏷️ Tags/Categories** - Organize events with custom tags (work, family, travel, etc.)
-- **🔍 Search & Filter** - Find events by text, date range, or tags
-- **🌓 Dark Mode** - Eye-friendly theme with persistent preference
-- **💾 Data Ownership** - All data stored locally in your browser
-- **📤 Export/Import** - Backup and restore your timeline as JSON
-- **📱 Responsive Design** - Works beautifully on desktop, tablet, and mobile
+---
+
+## ✨ What Makes v2.0 Special
+
+**Record Your Story** isn't just another timeline app. It's the first personal timeline powered by AI that understands your stories and helps you share them with the people who matter.
+
+### 🎤 Voice-to-Event (Coming Soon)
+Just speak naturally - our AI creates the event for you
+- "Last summer we went to Paris for two weeks..."
+- → Title: "Family Vacation in Paris"
+- → Auto-filled description, dates, tags
+
+### 👥 Real-Time Collaboration (Live Now!)
+Share timelines with family and friends
+- Invite by email
+- 3 permission levels (View, Edit, Admin)
+- Perfect for family histories
+
+### 🤖 AI Assistant (Foundation Ready)
+Claude 3.5 Sonnet enhances your memories
+- Improve event descriptions
+- Auto-generate tags
+- Timeline summaries: "Tell me about 2023"
+
+---
 
 ## 🚀 Quick Start
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/cwarloe/record-your-story.git
-   cd record-your-story
-   ```
+### Try It Live
+**👉 [record-your-story.onrender.com](https://record-your-story.onrender.com)**
 
-2. **Open in browser:**
-   ```bash
-   # Just open index.html in any modern browser
-   open index.html  # macOS
-   start index.html # Windows
-   xdg-open index.html # Linux
-   ```
+1. Sign up with email
+2. Create your first event
+3. Add photos, tags, descriptions
+4. Share with family (👥 Share button)
 
-3. **Start recording your story!**
-   - Add your first life event
-   - Upload photos to bring memories to life
-   - Tag events to organize your timeline
-   - Use search to find specific moments
+### Run Locally
 
-## 📖 How to Use
+```bash
+# Clone the repo
+git clone https://github.com/cwarloe/record-your-story.git
+cd record-your-story
 
-### Adding Events
-1. Fill in the event title and date (required)
-2. Write your story in the rich text editor
-3. Add tags by typing and pressing Enter
-4. Upload photos (optional, up to 5)
-5. Click "Add Event"
+# Install dependencies
+npm install
 
-### Organizing with Tags
-- Type tags in the form (e.g., "work", "family", "travel")
-- Press Enter to add each tag
-- Click tags below the search box to filter your timeline
-- Active filters are highlighted
+# Set up environment variables
+cp .env.example .env
+# Edit .env with your Supabase credentials
 
-### Search & Filter
-- **Text Search**: Search event titles and descriptions
-- **Date Range**: Filter events between specific dates
-- **Tags**: Click tag filters to show only tagged events
-- **Clear**: Reset all filters with one click
+# Run development server
+npm run dev
+# Open http://localhost:3000
 
-### Data Management
-- **Export Data**: Download your timeline as JSON (backup!)
-- **Import Data**: Restore from a previous backup
-- **Dark Mode**: Toggle theme with the moon/sun icon
+# Build for production
+npm run build
+```
 
-## 🛠️ Technical Details
+---
 
-### Storage Architecture
-- **LocalStorage**: Event metadata (title, date, description, tags)
-- **IndexedDB**: Photos (base64 images, unlimited storage)
-- **Hybrid Approach**: Fast metadata access + unlimited photo storage
+## 🎯 Key Features
 
-### Tech Stack
-- **Frontend**: Vanilla JavaScript (no frameworks!)
-- **Rich Text**: Quill.js
-- **Storage**: LocalStorage + IndexedDB
-- **Styling**: Custom CSS with CSS variables for theming
+### ✅ Available Now
 
-### Browser Support
-- Chrome/Edge (recommended)
-- Firefox
-- Safari
-- Any modern browser with LocalStorage and IndexedDB support
+- **Rich Event Creation**
+  - Formatted text editor (Quill.js)
+  - Photo uploads (unlimited via IndexedDB)
+  - Tags and categories
+  - Event connections (link related memories)
+
+- **Timeline Collaboration** 🆕
+  - Share timelines by email
+  - Permission management (View/Edit/Admin)
+  - Real-time updates
+  - Perfect for family histories
+
+- **Smart Organization**
+  - Advanced search (text, date, tags)
+  - Filter by date range
+  - Tag-based filtering
+  - Year markers on timeline
+
+- **Productivity**
+  - Undo/Redo (Ctrl+Z/Y)
+  - Keyboard shortcuts (press `?` to see all)
+  - Drag & drop photos
+  - Dark mode
+
+- **Export & Backup**
+  - Export to PDF
+  - Import/Export JSON
+  - Local-first (IndexedDB + Supabase)
+
+### 🚧 Coming Soon (AI Features)
+
+- **Voice-to-Event** - Speak your story, AI does the rest
+- **AI Enhancement** - One-click improve descriptions
+- **Timeline Summaries** - "What happened in 2023?"
+- **Smart Connections** - AI finds related events
+
+---
+
+## 🏗️ Tech Stack
+
+**Frontend:**
+- TypeScript + Vite
+- Vanilla JavaScript (no framework bloat)
+- Quill.js for rich text
+- IndexedDB for photos
+
+**Backend:**
+- Supabase (PostgreSQL + Auth + Storage)
+- Row Level Security (RLS) for multi-user
+- Real-time subscriptions
+
+**AI:**
+- Claude 3.5 Sonnet (Anthropic)
+- Web Speech API (browser)
+- Cost: ~$0.003 per AI-assisted event
+
+**Deployment:**
+- Render (static site)
+- Automatic deploys from GitHub
+- Free tier available
+
+---
 
 ## 📁 Project Structure
 
 ```
 record-your-story/
-├── index.html          # Main application
-├── app.js             # Application logic
-├── style.css          # Styling & themes
-├── README.md          # This file
-├── MVP-README.md      # Original MVP documentation
-├── ROADMAP.md         # Future feature ideas
-├── CHANGELOG.md       # Version history
-├── Documentation/     # Project documentation
-├── Project_Plans/     # Planning documents
-└── Designs/          # UI/UX designs
+├── src/
+│   ├── main.ts              # Main app logic
+│   ├── style.css            # Styling (CSS variables)
+│   ├── types/
+│   │   └── index.ts         # TypeScript types
+│   └── services/
+│       ├── supabase.ts      # Database service
+│       └── claude.ts        # AI service (v2.3.0)
+├── migrations/              # Database migrations
+├── schema.sql              # Full database schema
+├── index.html              # Entry point
+├── AI_FEATURES.md          # AI implementation guide
+├── COLLABORATION.md        # Collaboration docs
+└── RENDER_DEPLOYMENT.md    # Deployment guide
 ```
-
-## 🔒 Privacy & Data
-
-**Your data stays with you:**
-- All data stored locally in your browser
-- No server, no cloud, no tracking
-- Export your data anytime
-- Works completely offline after first load
-
-**Important Notes:**
-- Clearing browser data will delete your timeline
-- Use Export regularly to backup your events
-- Import/Export to transfer between devices
-
-## 🎯 Use Cases
-
-- **Personal Journal** - Document your life journey
-- **Family History** - Preserve family stories with photos
-- **Project Timeline** - Track project milestones
-- **Travel Log** - Remember adventures with photos and tags
-- **Career Tracker** - Document professional achievements
-- **Memory Book** - Keep cherished moments organized
-
-## 🚧 Future Enhancements
-
-See [ROADMAP.md](ROADMAP.md) for planned features:
-- Timeline visualization with connecting lines
-- Share individual events via links
-- Multiple timelines (separate work/personal)
-- Cloud sync (optional)
-- Collaboration features
-
-## 📝 License
-
-MIT License - Feel free to use for personal or commercial projects
-
-## 🤝 Contributing
-
-This is a personal project, but suggestions and feedback are welcome!
-Open an issue or submit a pull request.
-
-## 🙏 Credits
-
-Built with:
-- [Quill.js](https://quilljs.com/) - Rich text editor
-- Love for preserving memories
 
 ---
 
-**Version**: 1.0.0
-**Last Updated**: October 2025
-**Status**: Production Ready ✅
+## 🔧 Configuration
 
-Start preserving your story today! 📖✨
+### Environment Variables
+
+Create `.env` file:
+
+```bash
+# Supabase
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+
+# Claude AI (Optional - enables AI features)
+VITE_ANTHROPIC_API_KEY=your-api-key
+```
+
+### Database Setup
+
+1. Create Supabase project
+2. Run `schema.sql` in SQL Editor
+3. Run migration: `migrations/v2.1.0_collaboration.sql`
+4. Enable RLS policies (included in schema)
+
+**Full guide:** [SUPABASE_SETUP.md](SUPABASE_SETUP.md)
+
+---
+
+## 📚 Documentation
+
+- **[AI Features Guide](AI_FEATURES.md)** - Implementing voice & AI
+- **[Collaboration Setup](COLLABORATION.md)** - Timeline sharing
+- **[Deployment Guide](RENDER_DEPLOYMENT.md)** - Deploy to Render
+- **[v1 README](MVP-README.md)** - Original MVP documentation
+- **[Changelog](CHANGELOG.md)** - Version history
+
+---
+
+## 🎯 Use Cases
+
+### Family Histories
+Share timeline with family members, each adding their memories. Perfect for preserving stories across generations.
+
+### Life Milestones
+Track career, relationships, travels. Export to PDF for job applications or memoirs.
+
+### Project Documentation
+Chronicle project evolution with photos, notes, and team collaboration.
+
+### Medical Records
+Keep timeline of appointments, treatments, symptoms. Share with doctors.
+
+---
+
+## 🤝 Contributing
+
+Contributions welcome! This is an open-source project.
+
+1. Fork the repo
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open Pull Request
+
+**Development Notes:**
+- Use TypeScript strict mode
+- Follow existing code style
+- Add JSDoc comments for functions
+- Test locally before submitting
+
+---
+
+## 🛣️ Roadmap
+
+### v2.3.0 (In Progress)
+- [ ] Voice recording UI
+- [ ] AI event suggestions
+- [ ] Timeline summaries
+- [ ] Smart event connections
+
+### v2.4.0 (Planned)
+- [ ] Google Photos import
+- [ ] Email invitations for non-users
+- [ ] Map view of events
+- [ ] Video/audio upload UI
+
+### v2.5.0 (Planned)
+- [ ] Premium features (Whisper API)
+- [ ] Mobile apps (React Native)
+- [ ] Ancestry.com partnership
+- [ ] Multi-language support
+
+---
+
+## 📊 Version History
+
+### v2.3.0-alpha (Current)
+**AI Features Foundation**
+- Claude 3.5 Sonnet integration
+- Voice-to-event service layer
+- AI enhancement methods
+- Timeline intelligence ready
+
+### v2.1.0
+**Collaboration Features**
+- Share timelines with users
+- Permission management
+- Invitation system
+- Real-time collaboration
+
+### v2.0.4
+**Enhanced UX**
+- Keyboard shortcuts
+- Undo/Redo system
+- Toast notifications
+- Help modal
+
+### v1.0.0
+**MVP Release**
+- Core timeline functionality
+- Photo uploads
+- Export PDF
+- Local-first storage
+
+**[Full Changelog](CHANGELOG.md)**
+
+---
+
+## 💡 Why "Record Your Story"?
+
+Most timeline apps treat your memories like database entries. We believe your stories deserve better.
+
+With AI assistance:
+- **No writer's block** - Just speak, we'll format
+- **Better writing** - AI enhances your descriptions
+- **Automatic organization** - Tags, dates, connections
+- **Meaningful summaries** - Not just lists, but narratives
+
+Your life is a story. Let's tell it well.
+
+---
+
+## 🏆 What Makes This Different
+
+| Feature | Record Your Story | Other Apps |
+|---------|------------------|------------|
+| AI Writing Assistant | ✅ Claude 3.5 | ❌ |
+| Voice-to-Event | ✅ Coming Soon | ❌ |
+| Real Collaboration | ✅ Live Now | ⚠️ Limited |
+| Rich Media | ✅ Photos/Video/Audio | ⚠️ Photos Only |
+| Export Options | ✅ PDF/JSON | ⚠️ Limited |
+| Privacy First | ✅ Local + Cloud | ❌ Cloud Only |
+| Open Source | ✅ Yes | ❌ |
+
+---
+
+## 📄 License
+
+ISC License - Free for personal and commercial use
+
+---
+
+## 🙏 Acknowledgments
+
+- **Claude AI** (Anthropic) - AI-powered features
+- **Supabase** - Backend infrastructure
+- **Quill.js** - Rich text editor
+- **Vite** - Lightning-fast dev experience
+
+---
+
+## 📞 Support
+
+- **Issues:** [GitHub Issues](https://github.com/cwarloe/record-your-story/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/cwarloe/record-your-story/discussions)
+- **Live Demo:** [record-your-story.onrender.com](https://record-your-story.onrender.com)
+
+---
+
+## 🌟 Star This Repo!
+
+If you find this useful, please give it a ⭐ on GitHub. It helps others discover the project!
+
+---
+
+**Built with ❤️ using Claude Code**
+
+*Your memories deserve the best technology. Let's preserve them together.*
