@@ -1,5 +1,5 @@
 import { supabase } from '@/services/supabase';
-import type { User, Timeline, Event } from '@/types';
+import type { User, Timeline, TimelineEvent } from '@/types';
 import Quill from 'quill';
 import 'quill/dist/quill.snow.css';
 import './style.css';
@@ -7,7 +7,8 @@ import './style.css';
 // App state
 let currentUser: User | null = null;
 let currentTimeline: Timeline | null = null;
-let events: Event[] = [];
+let userTimelines: Timeline[] = []; // All user's timelines
+let events: TimelineEvent[] = [];
 let quill: Quill | null = null;
 let currentTags: string[] = [];
 let currentPhotos: string[] = [];
@@ -72,9 +73,13 @@ async function loadUserData() {
       return;
     }
 
+    userTimelines = [newTimeline];
     currentTimeline = newTimeline;
   } else {
-    currentTimeline = timelines[0]; // Use first timeline
+    userTimelines = timelines;
+    // Use saved timeline or first one
+    const savedTimelineId = localStorage.getItem('currentTimelineId');
+    currentTimeline = timelines.find(t => t.id === savedTimelineId) || timelines[0];
   }
 
   // Load events for current timeline
@@ -146,6 +151,16 @@ function showApp() {
     <div class="app-container">
       <header class="app-header">
         <h1>Record Your Story</h1>
+        <div class="timeline-switcher">
+          <select id="timeline-select" class="timeline-dropdown">
+            ${userTimelines.map(t => `
+              <option value="${t.id}" ${t.id === currentTimeline?.id ? 'selected' : ''}>
+                ${t.name} (${t.type})
+              </option>
+            `).join('')}
+          </select>
+          <button id="new-timeline-btn" class="btn btn-small" title="Create Timeline">+ Timeline</button>
+        </div>
         <div class="header-actions">
           <button id="theme-toggle" class="theme-toggle">🌙</button>
           <span class="user-email">${currentUser?.email}</span>
@@ -214,7 +229,7 @@ function showApp() {
 
   // Event listeners
   document.getElementById('signout-btn')?.addEventListener('click', handleSignOut);
-  document.getElementById('add-event-btn')?.addEventListener('click', showEventModal);
+  document.getElementById('add-event-btn')?.addEventListener('click', () => showEventModal());
   document.getElementById('theme-toggle')?.addEventListener('click', toggleTheme);
 
   // Search and filter listeners
@@ -223,11 +238,18 @@ function showApp() {
   document.getElementById('date-to')?.addEventListener('change', handleDateFilter);
   document.getElementById('clear-filters')?.addEventListener('click', clearFilters);
 
+  // Timeline switcher listeners
+  document.getElementById('timeline-select')?.addEventListener('change', handleTimelineSwitch);
+  document.getElementById('new-timeline-btn')?.addEventListener('click', showCreateTimelineModal);
+
+  // Attach event card listeners (edit, delete, tags)
+  attachTimelineEventListeners();
+
   initTheme();
 }
 
 // Get filtered events
-function getFilteredEvents(): Event[] {
+function getFilteredEvents(): TimelineEvent[] {
   return events.filter(event => {
     // Text search
     if (searchQuery) {
@@ -572,14 +594,7 @@ async function saveConnections(eventId: string) {
 
   for (const connectedEventId of currentConnections) {
     // Create bi-directional connection
-    const { error } = await supabase.client
-      .from('event_connections')
-      .upsert({
-        event_id_1: eventId,
-        event_id_2: connectedEventId,
-        connection_type: 'manual',
-        approved: true,
-      }, { onConflict: 'event_id_1,event_id_2' });
+    const { error } = await supabase.createEventConnection(eventId, connectedEventId);
 
     if (!error) {
       // Store in local map
@@ -603,10 +618,8 @@ async function saveConnections(eventId: string) {
 
 // Load connections from database
 async function loadConnections() {
-  const { data, error } = await supabase.client
-    .from('event_connections')
-    .select('*')
-    .or(`event_id_1.in.(${events.map(e => e.id).join(',')}),event_id_2.in.(${events.map(e => e.id).join(',')})`);
+  const eventIds = events.map(e => e.id);
+  const { data, error } = await supabase.getEventConnections(eventIds);
 
   if (!error && data) {
     eventConnections.clear();
@@ -850,6 +863,170 @@ function clearFilters() {
   refreshTimeline();
 }
 
+// Handle timeline switch
+async function handleTimelineSwitch(e: Event) {
+  const select = e.target as HTMLSelectElement;
+  const timelineId = select.value;
+
+  // Find and set the selected timeline
+  const selectedTimeline = userTimelines.find(t => t.id === timelineId);
+  if (!selectedTimeline) return;
+
+  currentTimeline = selectedTimeline;
+
+  // Save preference
+  localStorage.setItem('currentTimelineId', timelineId);
+
+  // Reload events for this timeline
+  const { data: timelineEvents, error } = await supabase.getEvents(timelineId);
+
+  if (error) {
+    console.error('Error loading timeline events:', error);
+    return;
+  }
+
+  events = timelineEvents || [];
+
+  // Load photos for events
+  for (const event of events) {
+    const { data: photos } = await supabase.getEventPhotos(event.id);
+    (event as any).photos = photos || [];
+  }
+
+  // Load event connections
+  await loadConnections();
+
+  // Refresh UI
+  showApp();
+}
+
+// Show create timeline modal
+function showCreateTimelineModal() {
+  const app = document.getElementById('app');
+  if (!app) return;
+
+  // Create modal HTML
+  const modalHtml = `
+    <div id="timeline-modal" class="modal">
+      <div class="modal-overlay"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Create New Timeline</h3>
+          <button id="timeline-modal-close" class="modal-close">&times;</button>
+        </div>
+        <form id="timeline-form">
+          <input type="text" id="timeline-name" placeholder="Timeline Name" required />
+
+          <label>Type</label>
+          <select id="timeline-type" required>
+            <option value="personal">Personal</option>
+            <option value="family">Family</option>
+            <option value="work">Work</option>
+            <option value="shared">Shared</option>
+          </select>
+
+          <div class="modal-actions">
+            <button type="button" id="timeline-cancel-btn" class="btn btn-secondary">Cancel</button>
+            <button type="submit" class="btn btn-primary">Create Timeline</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+
+  // Add modal to page
+  app.insertAdjacentHTML('beforeend', modalHtml);
+
+  // Event listeners
+  document.getElementById('timeline-modal-close')?.addEventListener('click', hideCreateTimelineModal);
+  document.getElementById('timeline-cancel-btn')?.addEventListener('click', hideCreateTimelineModal);
+  document.getElementById('timeline-form')?.addEventListener('submit', handleCreateTimeline);
+  document.querySelector('#timeline-modal .modal-overlay')?.addEventListener('click', hideCreateTimelineModal);
+}
+
+// Hide create timeline modal
+function hideCreateTimelineModal() {
+  const modal = document.getElementById('timeline-modal');
+  if (modal) {
+    modal.remove();
+  }
+}
+
+// Handle create timeline
+async function handleCreateTimeline(e: Event) {
+  e.preventDefault();
+
+  const form = e.target as HTMLFormElement;
+  const nameInput = document.getElementById('timeline-name') as HTMLInputElement;
+  const typeSelect = document.getElementById('timeline-type') as HTMLSelectElement;
+
+  const name = nameInput.value.trim();
+  const type = typeSelect.value as 'personal' | 'family' | 'work' | 'shared';
+
+  if (!name || !currentUser) return;
+
+  // Create timeline
+  const { data: newTimeline, error } = await supabase.createTimeline({
+    name,
+    type,
+    owner_id: currentUser.id,
+  });
+
+  if (error) {
+    console.error('Error creating timeline:', error);
+    alert('Failed to create timeline');
+    return;
+  }
+
+  if (newTimeline) {
+    // Add to timelines list
+    userTimelines.push(newTimeline);
+
+    // Switch to new timeline
+    currentTimeline = newTimeline;
+    localStorage.setItem('currentTimelineId', newTimeline.id);
+
+    // Clear events (new timeline has none)
+    events = [];
+
+    // Refresh UI
+    showApp();
+  }
+
+  hideCreateTimelineModal();
+}
+
+// Attach event listeners to timeline event cards
+function attachTimelineEventListeners() {
+  // Attach tag click listeners
+  document.querySelectorAll('.clickable-tag').forEach(tagEl => {
+    tagEl.addEventListener('click', (e) => {
+      const tag = (e.target as HTMLElement).dataset.tag;
+      if (tag) handleTagFilter(tag);
+    });
+  });
+
+  // Attach edit button listeners
+  document.querySelectorAll('.edit-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const button = e.currentTarget as HTMLElement;
+      const eventId = button.dataset.id;
+      if (eventId) showEventModal(eventId);
+    });
+  });
+
+  // Attach delete button listeners
+  document.querySelectorAll('.delete-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const button = e.currentTarget as HTMLElement;
+      const eventId = button.dataset.id;
+      if (eventId) handleDeleteEvent(eventId);
+    });
+  });
+}
+
 function refreshTimeline() {
   const timeline = document.getElementById('timeline');
   if (timeline) {
@@ -857,28 +1034,8 @@ function refreshTimeline() {
       ? '<p class="empty-state">No events yet. Click "Add Event" to record your first story!</p>'
       : renderTimeline();
 
-    // Re-attach tag click listeners
-    document.querySelectorAll('.clickable-tag').forEach(tagEl => {
-      tagEl.addEventListener('click', (e) => {
-        const tag = (e.target as HTMLElement).dataset.tag;
-        if (tag) handleTagFilter(tag);
-      });
-    });
-
-    // Re-attach edit/delete button listeners
-    document.querySelectorAll('.edit-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const eventId = (e.target as HTMLElement).dataset.id;
-        if (eventId) showEventModal(eventId);
-      });
-    });
-
-    document.querySelectorAll('.delete-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const eventId = (e.target as HTMLElement).dataset.id;
-        if (eventId) handleDeleteEvent(eventId);
-      });
-    });
+    // Re-attach all event listeners
+    attachTimelineEventListeners();
   }
 }
 

@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import type { User, Event, Timeline, EventPhoto } from '@/types';
+import type { User, TimelineEvent, Timeline, EventPhoto } from '@/types';
 
 // Supabase configuration
 // TODO: Replace with actual Supabase project credentials
@@ -80,7 +80,7 @@ class SupabaseService {
     return { data, error };
   }
 
-  async updateEvent(id: string, updates: Partial<Event>) {
+  async updateEvent(id: string, updates: Partial<TimelineEvent>) {
     const { data, error } = await this.client
       .from('events')
       .update(updates)
@@ -145,6 +145,29 @@ class SupabaseService {
       .from('timelines')
       .select('*')
       .eq('owner_id', user_id);
+    return { data, error };
+  }
+
+  // Event Connection methods
+  async createEventConnection(event_id_1: string, event_id_2: string) {
+    const { error } = await this.client
+      .from('event_connections')
+      .upsert({
+        event_id_1,
+        event_id_2,
+        connection_type: 'manual',
+        approved: true,
+      }, { onConflict: 'event_id_1,event_id_2' });
+    return { error };
+  }
+
+  async getEventConnections(eventIds: string[]) {
+    if (eventIds.length === 0) return { data: [], error: null };
+
+    const { data, error } = await this.client
+      .from('event_connections')
+      .select('*')
+      .or(`event_id_1.in.(${eventIds.join(',')}),event_id_2.in.(${eventIds.join(',')})`);
     return { data, error };
   }
 

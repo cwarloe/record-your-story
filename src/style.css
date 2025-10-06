@@ -252,6 +252,32 @@ label {
   font-weight: 600;
 }
 
+.timeline-switcher {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.timeline-dropdown {
+  padding: 8px 12px;
+  border-radius: var(--border-radius);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  min-width: 180px;
+}
+
+.timeline-dropdown:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.timeline-dropdown option {
+  background: var(--background);
+  color: var(--text-primary);
+}
+
 .header-actions {
   display: flex;
   align-items: center;
@@ -727,6 +753,16 @@ body.dark-mode .ql-picker-label {
     flex-direction: column;
     gap: var(--spacing-sm);
     text-align: center;
+  }
+
+  .timeline-switcher {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .timeline-dropdown {
+    flex: 1;
+    max-width: 250px;
   }
 
   .timeline-header {

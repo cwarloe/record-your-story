@@ -12,7 +12,7 @@ export interface User {
   created_at: string;
 }
 
-export interface Event {
+export interface TimelineEvent {
   id: EventId;
   title: string;
   date: string;
@@ -68,7 +68,7 @@ export interface EventMention {
 export interface AppState {
   currentUser: User | null;
   currentTimeline: Timeline | null;
-  events: Event[];
+  events: TimelineEvent[];
   loading: boolean;
   error: string | null;
 }
