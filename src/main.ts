@@ -1,6 +1,7 @@
 import { supabase } from '@/services/supabase';
 import { claude } from '@/services/claude';
 import { invitationService } from '@/services/invitations';
+import { googlePhotosService } from '@/services/google-photos';
 import type { User, Timeline, TimelineEvent } from '@/types';
 import Quill from 'quill';
 import 'quill/dist/quill.snow.css';
@@ -319,6 +320,7 @@ function showApp() {
         <div class="timeline-header">
           <h2>${currentTimeline?.name || 'My Story'}</h2>
           <div class="timeline-actions">
+            <button id="import-google-photos-btn" class="btn btn-secondary btn-small" title="Import from Google Photos">📷 Import Photos</button>
             <button id="share-timeline-btn" class="btn btn-secondary btn-small" title="Share Timeline">👥 Share</button>
             <button id="add-event-btn" class="btn btn-primary">+ Add Event</button>
           </div>
@@ -463,6 +465,7 @@ function showApp() {
     // Event listeners
     document.getElementById('signout-btn')?.addEventListener('click', handleSignOut);
     document.getElementById('add-event-btn')?.addEventListener('click', () => showEventModal());
+    document.getElementById('import-google-photos-btn')?.addEventListener('click', handleGooglePhotosImport);
     document.getElementById('theme-toggle')?.addEventListener('click', toggleTheme);
 
     // Search and filter listeners
@@ -1267,6 +1270,65 @@ async function handleSignOut() {
 
   if (error) {
     console.error('Error signing out:', error);
+  }
+}
+
+// Handle Google Photos import
+async function handleGooglePhotosImport() {
+  if (!currentTimeline) {
+    showToast('No timeline selected', 'error');
+    return;
+  }
+
+  try {
+    // Show confirmation dialog
+    const maxPhotos = prompt(
+      'How many photos would you like to import from Google Photos?\n\n' +
+      'Note: Each photo will create a new event on your timeline.\n' +
+      'Recommended: Start with 10-20 photos.',
+      '20'
+    );
+
+    if (!maxPhotos) return; // User cancelled
+
+    const count = parseInt(maxPhotos);
+    if (isNaN(count) || count < 1 || count > 100) {
+      showToast('Please enter a number between 1 and 100', 'error');
+      return;
+    }
+
+    showToast('🔐 Requesting Google Photos authorization...', 'info');
+
+    // Authorize with Google
+    await googlePhotosService.authorize();
+
+    showToast('📥 Importing photos... This may take a minute.', 'info');
+
+    // Import photos
+    const result = await googlePhotosService.importPhotos(
+      currentTimeline.id,
+      count,
+      (imported, total) => {
+        showToast(`Imported ${imported} of ${total} photos...`, 'info');
+      }
+    );
+
+    if (result.success) {
+      showToast(
+        `✅ Successfully imported ${result.imported} photos!${result.failed > 0 ? ` (${result.failed} failed)` : ''}`,
+        'success'
+      );
+
+      // Reload events to show new photos
+      await loadUserData();
+      showApp();
+    } else {
+      showToast(`❌ Import failed: ${result.error}`, 'error');
+    }
+
+  } catch (error) {
+    console.error('Google Photos import error:', error);
+    showToast(`❌ Import failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
   }
 }
 
