@@ -356,6 +356,7 @@ function showApp() {
             <label>Description</label>
             <div class="voice-recording-section">
               <button type="button" id="voice-record-btn" class="btn btn-secondary btn-small">🎤 Record Story</button>
+              ${claude.isEnabled() ? '<button type="button" id="enhance-btn" class="btn btn-secondary btn-small">✨ Enhance with AI</button>' : ''}
               <div id="recording-indicator" class="recording-indicator" style="display: none;">
                 <span class="pulse-dot"></span>
                 <span>Recording...</span>
@@ -907,6 +908,9 @@ function showEventModal(eventId?: string) {
     }
   });
 
+  // AI Enhancement listener
+  document.getElementById('enhance-btn')?.addEventListener('click', handleEnhanceEvent);
+
   // Invitation checkbox listener
   document.getElementById('invite-checkbox')?.addEventListener('change', (e) => {
     const checked = (e.target as HTMLInputElement).checked;
@@ -1331,6 +1335,76 @@ async function handleGooglePhotosImport() {
   } catch (error) {
     console.error('Google Photos import error:', error);
     showToast(`❌ Import failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
+  }
+}
+
+// Handle AI Event Enhancement
+async function handleEnhanceEvent() {
+  if (!claude.isEnabled()) {
+    showToast('Claude AI not enabled. Add VITE_ANTHROPIC_API_KEY to enable.', 'error');
+    return;
+  }
+
+  const titleInput = document.getElementById('event-title') as HTMLInputElement;
+  const title = titleInput?.value.trim();
+
+  if (!title) {
+    showToast('Please add a title first', 'info');
+    return;
+  }
+
+  if (!quill) {
+    showToast('Editor not ready', 'error');
+    return;
+  }
+
+  const description = quill.root.innerHTML;
+
+  if (!description || description === '<p><br></p>') {
+    showToast('Please add a description first', 'info');
+    return;
+  }
+
+  const enhanceBtn = document.getElementById('enhance-btn') as HTMLButtonElement;
+  if (enhanceBtn) {
+    enhanceBtn.disabled = true;
+    enhanceBtn.textContent = '✨ Enhancing...';
+  }
+
+  try {
+    const result = await claude.enhanceEvent(title, quill.getText());
+
+    if (result.error) {
+      showToast(result.error, 'error');
+      return;
+    }
+
+    // Update title if improved
+    if (result.improvedTitle && titleInput) {
+      titleInput.value = result.improvedTitle;
+    }
+
+    // Update description if improved
+    if (result.improvedDescription && quill) {
+      quill.root.innerHTML = `<p>${result.improvedDescription}</p>`;
+    }
+
+    // Add suggested tags
+    if (result.suggestedTags && result.suggestedTags.length > 0) {
+      currentTags = [...new Set([...currentTags, ...result.suggestedTags])];
+      renderTags();
+    }
+
+    showToast('✨ Event enhanced with AI!', 'success');
+
+  } catch (error) {
+    console.error('Enhancement error:', error);
+    showToast('Failed to enhance event', 'error');
+  } finally {
+    if (enhanceBtn) {
+      enhanceBtn.disabled = false;
+      enhanceBtn.textContent = '✨ Enhance with AI';
+    }
   }
 }
 
