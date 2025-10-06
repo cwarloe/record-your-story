@@ -1027,10 +1027,10 @@ async function handleEventSubmit(e: SubmitEvent) {
       await saveConnections(data.id);
 
       events.push(data);
+      showToast('Event created successfully! ✅', 'success');
       hideEventModal();
       refreshTimeline();
       initTheme();
-      showToast('Event created successfully!', 'success');
     }
   }
 }
