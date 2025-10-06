@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import path from 'path'
+import { copyFileSync } from 'fs'
 
 export default defineConfig({
   resolve: {
@@ -9,5 +10,13 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+  },
+  build: {
+    rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, 'index.html'),
+        callback: path.resolve(__dirname, 'google-callback.html'),
+      },
+    },
   },
 })
