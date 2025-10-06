@@ -2,6 +2,87 @@
 
 All notable changes to Record Your Story will be documented in this file.
 
+## [2.0.2] - 2025-10-05
+
+### 🎨 Quick Wins Sprint - UX Enhancements
+
+**Record Your Story v2.0.2** - Polished user experience with toast notifications, drag & drop photos, and smooth animations.
+
+### ✨ New Features
+
+#### Toast Notifications
+- **Success Messages**: Green toasts for successful actions
+  - "Event created successfully!"
+  - "Event updated successfully!"
+  - "Event deleted successfully"
+  - "Timeline created successfully!"
+  - "PDF exported successfully!"
+- **Info Messages**: Blue toasts for timeline switching
+  - "Switched to 'Timeline Name'"
+- **Error Messages**: Red toasts for failures
+- **Auto-dismiss**: Toasts slide up and disappear after 3 seconds
+- **Non-blocking**: Modern, unobtrusive notifications
+
+#### Drag & Drop Photo Upload
+- **Visual Drop Zone**: Drag files directly onto photo area
+- **Hover Feedback**: Zone highlights when dragging files over
+- **Click to Browse**: Click anywhere in drop zone to select files
+- **File Validation**: Only accepts image files
+- **Preview Thumbnails**: Photos animate in with scale effect
+
+#### Smooth Animations
+- **Timeline Events**: Staggered fade-in animation (0.05s delays)
+- **Modal Transitions**: Slide-in with scale effect (0.3s)
+- **Button Feedback**: Scale down on click for tactile feel
+- **Photo Previews**: Zoom in on appearance, scale on hover
+- **Tag Animations**: Slide in from left, scale on hover
+- **Toast Slides**: Smooth slide-up from bottom with bounce
+
+### 🐛 Bug Fixes
+
+1. **Fixed Login Blank Screen**
+   - Added defensive checks to `showApp()` function
+   - Try-catch wrapper with error UI and reload button
+   - Comprehensive logging for debugging
+   - Null-coalescing operators for safe template rendering
+
+2. **Fixed Quill Editor Not Loading**
+   - Editor now reinitializes every time modal opens
+   - Removed stale instance check that prevented recreation
+   - Description properly loads when editing events
+
+3. **Fixed Photo Upload Not Working**
+   - Made entire drop zone clickable to trigger file browser
+   - Added proper event listener for click-to-upload
+
+### 🎨 CSS Enhancements
+
+- **@keyframes fadeInUp**: Timeline event entrance animation
+- **@keyframes modalFadeIn**: Modal overlay fade
+- **@keyframes modalSlideIn**: Modal content slide-in with scale
+- **@keyframes photoFadeIn**: Photo thumbnail appearance
+- **@keyframes tagSlideIn**: Tag entrance animation
+- **Toast Styles**: Success (green), error (red), info (blue) variants
+- **Hover Effects**: Buttons, photos, tags, event cards
+- **Active States**: Button press feedback
+
+### 🛠️ Technical Changes
+
+- Replaced `alert()` calls with `showToast()` throughout app
+- Added `setupDragAndDrop()` function for file handling
+- Added `handleFiles()` for unified file processing
+- Improved error handling in `loadUserData()`
+- Enhanced modal lifecycle management
+
+### 📊 Stats
+- **Lines Changed**: +250 CSS, +150 JS
+- **Files Modified**: 2 (main.ts, style.css)
+- **New Functions**: 2 (showToast, setupDragAndDrop)
+- **Animations Added**: 6 keyframe animations
+- **Status**: All features tested ✅
+
+---
+
 ## [2.0.1] - 2025-10-05
 
 ### 🎉 Multiple Timelines + Bug Fixes

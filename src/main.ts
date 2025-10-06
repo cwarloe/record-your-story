@@ -52,57 +52,78 @@ async function init() {
 
 // Load user's timelines and events
 async function loadUserData() {
-  if (!currentUser) return;
+  console.log('loadUserData() called, currentUser:', currentUser);
 
-  // Get user's timelines
-  const { data: timelines, error: timelineError } = await supabase.getUserTimelines(currentUser.id);
-
-  if (timelineError) {
-    console.error('Error loading timelines:', timelineError);
+  if (!currentUser) {
+    console.error('loadUserData: No current user!');
     return;
   }
 
-  // If no timelines exist, create default personal timeline
-  if (!timelines || timelines.length === 0) {
-    const { data: newTimeline, error: createError } = await supabase.createTimeline({
-      name: 'My Story',
-      owner_id: currentUser.id,
-      type: 'personal',
-    });
+  try {
+    // Get user's timelines
+    const { data: timelines, error: timelineError } = await supabase.getUserTimelines(currentUser.id);
 
-    if (createError) {
-      console.error('Error creating timeline:', createError);
+    if (timelineError) {
+      console.error('Error loading timelines:', timelineError);
+      alert('Error loading timelines. Please refresh the page.');
       return;
     }
 
-    userTimelines = [newTimeline];
-    currentTimeline = newTimeline;
-  } else {
-    userTimelines = timelines;
-    // Use saved timeline or first one
-    const savedTimelineId = localStorage.getItem('currentTimelineId');
-    currentTimeline = timelines.find(t => t.id === savedTimelineId) || timelines[0];
-  }
+    console.log('Loaded timelines:', timelines);
 
-  // Load events for current timeline
-  if (currentTimeline) {
-    const { data: timelineEvents, error: eventsError } = await supabase.getEvents(currentTimeline.id);
+    // If no timelines exist, create default personal timeline
+    if (!timelines || timelines.length === 0) {
+      console.log('No timelines found, creating default...');
+      const { data: newTimeline, error: createError } = await supabase.createTimeline({
+        name: 'My Story',
+        owner_id: currentUser.id,
+        type: 'personal',
+      });
 
-    if (eventsError) {
-      console.error('Error loading events:', eventsError);
-      return;
+      if (createError) {
+        console.error('Error creating timeline:', createError);
+        alert('Error creating timeline. Please check your database permissions.');
+        return;
+      }
+
+      console.log('Created new timeline:', newTimeline);
+      userTimelines = [newTimeline];
+      currentTimeline = newTimeline;
+    } else {
+      userTimelines = timelines;
+      // Use saved timeline or first one
+      const savedTimelineId = localStorage.getItem('currentTimelineId');
+      currentTimeline = timelines.find(t => t.id === savedTimelineId) || timelines[0];
+      console.log('Selected timeline:', currentTimeline);
     }
 
-    events = timelineEvents || [];
+    // Load events for current timeline
+    if (currentTimeline) {
+      const { data: timelineEvents, error: eventsError } = await supabase.getEvents(currentTimeline.id);
 
-    // Load photos for each event
-    for (const event of events) {
-      const { data: photos } = await supabase.getEventPhotos(event.id);
-      (event as any).photos = photos || [];
+      if (eventsError) {
+        console.error('Error loading events:', eventsError);
+        // Don't return - just set empty events array
+        events = [];
+      } else {
+        events = timelineEvents || [];
+        console.log('Loaded events:', events.length);
+
+        // Load photos for each event
+        for (const event of events) {
+          const { data: photos } = await supabase.getEventPhotos(event.id);
+          (event as any).photos = photos || [];
+        }
+
+        // Load event connections
+        await loadConnections();
+      }
+    } else {
+      console.error('No currentTimeline set after loading!');
     }
-
-    // Load event connections
-    await loadConnections();
+  } catch (error) {
+    console.error('Fatal error in loadUserData:', error);
+    alert('Error loading your data. Please refresh the page.');
   }
 }
 
@@ -147,29 +168,45 @@ function showAuth() {
 // Show main app UI
 function showApp() {
   const app = document.getElementById('app');
-  if (!app) return;
+  if (!app) {
+    console.error('App element not found!');
+    return;
+  }
 
-  app.innerHTML = `
-    <div class="app-container">
-      <header class="app-header">
-        <h1>Record Your Story</h1>
-        <div class="timeline-switcher">
-          <select id="timeline-select" class="timeline-dropdown">
-            ${userTimelines.map(t => `
-              <option value="${t.id}" ${t.id === currentTimeline?.id ? 'selected' : ''}>
-                ${t.name} (${t.type})
-              </option>
-            `).join('')}
-          </select>
-          <button id="new-timeline-btn" class="btn btn-small" title="Create Timeline">+ Timeline</button>
-        </div>
-        <div class="header-actions">
-          <button id="export-pdf-btn" class="btn btn-secondary btn-small" title="Export to PDF">📄 Export PDF</button>
-          <button id="theme-toggle" class="theme-toggle">🌙</button>
-          <span class="user-email">${currentUser?.email}</span>
-          <button id="signout-btn" class="btn btn-small">Sign Out</button>
-        </div>
-      </header>
+  // Defensive checks
+  if (!currentUser) {
+    console.error('No current user!');
+    showAuth();
+    return;
+  }
+
+  if (!currentTimeline) {
+    console.error('No current timeline!');
+    return;
+  }
+
+  try {
+    app.innerHTML = `
+      <div class="app-container">
+        <header class="app-header">
+          <h1>Record Your Story</h1>
+          <div class="timeline-switcher">
+            <select id="timeline-select" class="timeline-dropdown">
+              ${(userTimelines || []).map(t => `
+                <option value="${t.id}" ${t.id === currentTimeline?.id ? 'selected' : ''}>
+                  ${t.name} (${t.type})
+                </option>
+              `).join('')}
+            </select>
+            <button id="new-timeline-btn" class="btn btn-small" title="Create Timeline">+ Timeline</button>
+          </div>
+          <div class="header-actions">
+            <button id="export-pdf-btn" class="btn btn-secondary btn-small" title="Export to PDF">📄 Export PDF</button>
+            <button id="theme-toggle" class="theme-toggle">🌙</button>
+            <span class="user-email">${currentUser?.email || 'User'}</span>
+            <button id="signout-btn" class="btn btn-small">Sign Out</button>
+          </div>
+        </header>
 
       <main class="app-main">
         <div class="timeline-header">
@@ -207,7 +244,15 @@ function showApp() {
             <div id="editor-container"></div>
 
             <label>Photos</label>
-            <input type="file" id="photo-upload" accept="image/*" multiple />
+            <div id="photo-drop-zone" class="photo-drop-zone">
+              <div class="drop-zone-content">
+                <span class="drop-zone-icon">📸</span>
+                <p>Drag & drop photos here</p>
+                <p class="drop-zone-or">or</p>
+                <label for="photo-upload" class="btn btn-secondary btn-small">Browse Files</label>
+              </div>
+              <input type="file" id="photo-upload" accept="image/*" multiple style="display: none;" />
+            </div>
             <div id="photo-preview" class="photo-preview"></div>
 
             <label>Tags</label>
@@ -230,28 +275,38 @@ function showApp() {
     </div>
   `;
 
-  // Event listeners
-  document.getElementById('signout-btn')?.addEventListener('click', handleSignOut);
-  document.getElementById('add-event-btn')?.addEventListener('click', () => showEventModal());
-  document.getElementById('theme-toggle')?.addEventListener('click', toggleTheme);
+    // Event listeners
+    document.getElementById('signout-btn')?.addEventListener('click', handleSignOut);
+    document.getElementById('add-event-btn')?.addEventListener('click', () => showEventModal());
+    document.getElementById('theme-toggle')?.addEventListener('click', toggleTheme);
 
-  // Search and filter listeners
-  document.getElementById('search-input')?.addEventListener('input', handleSearch);
-  document.getElementById('date-from')?.addEventListener('change', handleDateFilter);
-  document.getElementById('date-to')?.addEventListener('change', handleDateFilter);
-  document.getElementById('clear-filters')?.addEventListener('click', clearFilters);
+    // Search and filter listeners
+    document.getElementById('search-input')?.addEventListener('input', handleSearch);
+    document.getElementById('date-from')?.addEventListener('change', handleDateFilter);
+    document.getElementById('date-to')?.addEventListener('change', handleDateFilter);
+    document.getElementById('clear-filters')?.addEventListener('click', clearFilters);
 
-  // Timeline switcher listeners
-  document.getElementById('timeline-select')?.addEventListener('change', handleTimelineSwitch);
-  document.getElementById('new-timeline-btn')?.addEventListener('click', showCreateTimelineModal);
+    // Timeline switcher listeners
+    document.getElementById('timeline-select')?.addEventListener('change', handleTimelineSwitch);
+    document.getElementById('new-timeline-btn')?.addEventListener('click', showCreateTimelineModal);
 
-  // Export listener
-  document.getElementById('export-pdf-btn')?.addEventListener('click', exportToPDF);
+    // Export listener
+    document.getElementById('export-pdf-btn')?.addEventListener('click', exportToPDF);
 
-  // Attach event card listeners (edit, delete, tags)
-  attachTimelineEventListeners();
+    // Attach event card listeners (edit, delete, tags)
+    attachTimelineEventListeners();
 
-  initTheme();
+    initTheme();
+  } catch (error) {
+    console.error('Error rendering app:', error);
+    app.innerHTML = `
+      <div style="padding: 40px; text-align: center;">
+        <h2>Something went wrong</h2>
+        <p>Please refresh the page or <button onclick="location.reload()" style="background: #7266FF; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;">Click here to reload</button></p>
+        <pre style="text-align: left; background: #f5f5f5; padding: 16px; border-radius: 8px; margin-top: 20px;">${error}</pre>
+      </div>
+    `;
+  }
 }
 
 // Get filtered events
@@ -399,7 +454,8 @@ function showEventModal(eventId?: string) {
   // Initialize Quill editor
   setTimeout(() => {
     const container = document.getElementById('editor-container');
-    if (container && !quill) {
+    if (container) {
+      // Always recreate Quill when modal opens
       quill = new Quill('#editor-container', {
         theme: 'snow',
         placeholder: 'Tell your story... (use toolbar to format text)',
@@ -412,18 +468,14 @@ function showEventModal(eventId?: string) {
           ]
         }
       });
-    }
 
-    // Set description if editing
-    if (eventId && quill) {
-      const event = events.find(e => e.id === eventId);
-      if (event?.description) {
-        quill.root.innerHTML = event.description;
-      } else {
-        quill.setText('');
+      // Set description if editing
+      if (eventId) {
+        const event = events.find(e => e.id === eventId);
+        if (event?.description) {
+          quill.root.innerHTML = event.description;
+        }
       }
-    } else if (quill) {
-      quill.setText('');
     }
 
     // Render tags, photos, and connections
@@ -440,6 +492,14 @@ function showEventModal(eventId?: string) {
   document.getElementById('photo-upload')?.addEventListener('change', handlePhotoUpload);
   document.getElementById('add-connection-btn')?.addEventListener('click', showConnectionPicker);
   document.querySelector('.modal-overlay')?.addEventListener('click', hideEventModal);
+
+  // Drag & drop listeners
+  setupDragAndDrop();
+
+  // Make drop zone clickable to trigger file input
+  document.getElementById('photo-drop-zone')?.addEventListener('click', () => {
+    document.getElementById('photo-upload')?.click();
+  });
 }
 
 // Hide event modal
@@ -494,13 +554,59 @@ function renderTags() {
   });
 }
 
-// Handle photo upload
+// Setup drag & drop for photos
+function setupDragAndDrop() {
+  const dropZone = document.getElementById('photo-drop-zone');
+  if (!dropZone) return;
+
+  // Prevent default drag behaviors
+  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    });
+  });
+
+  // Highlight drop zone when dragging over
+  ['dragenter', 'dragover'].forEach(eventName => {
+    dropZone.addEventListener(eventName, () => {
+      dropZone.classList.add('drag-over');
+    });
+  });
+
+  ['dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, () => {
+      dropZone.classList.remove('drag-over');
+    });
+  });
+
+  // Handle dropped files
+  dropZone.addEventListener('drop', (e: DragEvent) => {
+    const files = e.dataTransfer?.files;
+    if (files) {
+      handleFiles(files);
+    }
+  });
+}
+
+// Handle photo upload (from input or drag-drop)
 function handlePhotoUpload(e: Event) {
   const input = e.target as HTMLInputElement;
   const files = input.files;
-  if (!files) return;
+  if (files) {
+    handleFiles(files);
+  }
+}
 
+// Process uploaded files
+function handleFiles(files: FileList) {
   Array.from(files).forEach(file => {
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert(`${file.name} is not an image file`);
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (e) => {
       const dataUrl = e.target?.result as string;
@@ -765,7 +871,7 @@ async function handleEventSubmit(e: SubmitEvent) {
     });
 
     if (error) {
-      alert(`Error updating event: ${error.message}`);
+      showToast(`Error updating event: ${error.message}`, 'error');
     } else if (data) {
       // Delete old photos and save new ones
       await supabase.deleteEventPhotos(editingEventId);
@@ -786,6 +892,7 @@ async function handleEventSubmit(e: SubmitEvent) {
       hideEventModal();
       refreshTimeline();
       initTheme();
+      showToast('Event updated successfully!', 'success');
     }
   } else {
     // Create new event
@@ -802,7 +909,7 @@ async function handleEventSubmit(e: SubmitEvent) {
     const { data, error } = await supabase.createEvent(newEvent);
 
     if (error) {
-      alert(`Error creating event: ${error.message}`);
+      showToast(`Error creating event: ${error.message}`, 'error');
     } else if (data) {
       // Save photos if any
       if (currentPhotos.length > 0) {
@@ -817,6 +924,7 @@ async function handleEventSubmit(e: SubmitEvent) {
       hideEventModal();
       refreshTimeline();
       initTheme();
+      showToast('Event created successfully!', 'success');
     }
   }
 }
@@ -830,10 +938,11 @@ async function handleDeleteEvent(eventId: string) {
   const { error } = await supabase.deleteEvent(eventId);
 
   if (error) {
-    alert(`Error deleting event: ${error.message}`);
+    showToast(`Error deleting event: ${error.message}`, 'error');
   } else {
     events = events.filter(e => e.id !== eventId);
     refreshTimeline();
+    showToast('Event deleted successfully', 'success');
   }
 }
 
@@ -905,6 +1014,7 @@ async function handleTimelineSwitch(e: Event) {
 
   if (error) {
     console.error('Error loading timeline events:', error);
+    showToast('Error loading timeline events', 'error');
     return;
   }
 
@@ -921,6 +1031,7 @@ async function handleTimelineSwitch(e: Event) {
 
   // Refresh UI
   showApp();
+  showToast(`Switched to "${selectedTimeline.name}"`, 'info');
 }
 
 // Show create timeline modal
@@ -997,7 +1108,7 @@ async function handleCreateTimeline(e: Event) {
 
   if (error) {
     console.error('Error creating timeline:', error);
-    alert('Failed to create timeline');
+    showToast('Failed to create timeline', 'error');
     return;
   }
 
@@ -1014,6 +1125,7 @@ async function handleCreateTimeline(e: Event) {
 
     // Refresh UI
     showApp();
+    showToast(`Timeline "${name}" created successfully!`, 'success');
   }
 
   hideCreateTimelineModal();
@@ -1060,6 +1172,25 @@ function refreshTimeline() {
     // Re-attach all event listeners
     attachTimelineEventListeners();
   }
+}
+
+// Show toast notification
+function showToast(message: string, type: 'success' | 'error' | 'info' = 'info') {
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.textContent = message;
+
+  // Add to page
+  document.body.appendChild(toast);
+
+  // Trigger animation
+  setTimeout(() => toast.classList.add('show'), 10);
+
+  // Remove after 3 seconds
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
 }
 
 // Export timeline to PDF
@@ -1134,6 +1265,9 @@ async function exportToPDF() {
   // Save PDF
   const filename = `${currentTimeline?.name || 'timeline'}_${new Date().toISOString().split('T')[0]}.pdf`;
   doc.save(filename);
+
+  // Show success toast
+  showToast('Timeline exported to PDF successfully!', 'success');
 }
 
 // Start app
