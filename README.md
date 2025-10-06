@@ -4,7 +4,7 @@
 > **A personal timeline application that uses Claude AI to transform how you capture and share life's moments.**
 
 [![Live Demo](https://img.shields.io/badge/🚀-Live%20Demo-7266FF)](https://record-your-story.onrender.com)
-[![Version](https://img.shields.io/badge/version-2.3.0--alpha-blue)](https://github.com/cwarloe/record-your-story/releases)
+[![Version](https://img.shields.io/badge/version-2.5.0--beta-blue)](https://github.com/cwarloe/record-your-story/releases)
 [![License](https://img.shields.io/badge/license-ISC-green)](LICENSE)
 
 ---
@@ -13,11 +13,12 @@
 
 **Record Your Story** isn't just another timeline app. It's the first personal timeline powered by AI that understands your stories and helps you share them with the people who matter.
 
-### 🎤 Voice-to-Event (Coming Soon)
-Just speak naturally - our AI creates the event for you
-- "Last summer we went to Paris for two weeks..."
-- → Title: "Family Vacation in Paris"
-- → Auto-filled description, dates, tags
+### 🎤 Voice-to-Event (Live Now!)
+Just speak naturally - Claude AI creates the event for you
+- Click the microphone icon → speak your story
+- AI extracts title, date, description, and tags
+- Powered by Web Speech API + Claude 3.5 Sonnet
+- Works in Chrome/Edge browsers
 
 ### 👥 Real-Time Collaboration (Live Now!)
 Share timelines with family and friends
@@ -25,11 +26,19 @@ Share timelines with family and friends
 - 3 permission levels (View, Edit, Admin)
 - Perfect for family histories
 
-### 🤖 AI Assistant (Foundation Ready)
+### 🤖 AI Assistant (Live Now!)
 Claude 3.5 Sonnet enhances your memories
-- Improve event descriptions
-- Auto-generate tags
-- Timeline summaries: "Tell me about 2023"
+- Voice-to-event: Speak naturally, AI creates the event
+- Auto-extract dates from natural language
+- Auto-generate tags and descriptions
+- Smart event suggestions
+
+### 📷 Google Photos Integration (Beta)
+Import your memories directly from Google Photos
+- OAuth 2.0 secure authentication
+- Batch import with progress tracking
+- Automatic event creation from photo metadata
+- EXIF date extraction
 
 ---
 
@@ -100,12 +109,13 @@ npm run build
   - Import/Export JSON
   - Local-first (IndexedDB + Supabase)
 
-### 🚧 Coming Soon (AI Features)
+### 🚧 Coming in v3.0
 
-- **Voice-to-Event** - Speak your story, AI does the rest
-- **AI Enhancement** - One-click improve descriptions
-- **Timeline Summaries** - "What happened in 2023?"
-- **Smart Connections** - AI finds related events
+- **Map View** - See your events on an interactive map
+- **Video/Audio Upload** - Rich media beyond photos
+- **Timeline Summaries** - "Tell me about 2023" with AI
+- **Smart Connections** - AI suggests related events
+- **SendGrid Email** - Send invitations to non-users
 
 ---
 
@@ -163,12 +173,15 @@ record-your-story/
 Create `.env` file:
 
 ```bash
-# Supabase
+# Supabase (Required)
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
 
-# Claude AI (Optional - enables AI features)
+# Claude AI (Optional - enables voice-to-event)
 VITE_ANTHROPIC_API_KEY=your-api-key
+
+# Google Photos (Optional - enables photo import)
+VITE_GOOGLE_CLIENT_ID=your-client-id
 ```
 
 ### Database Setup
@@ -228,54 +241,75 @@ Contributions welcome! This is an open-source project.
 
 ## 🛣️ Roadmap
 
-### v2.3.0 (In Progress)
-- [ ] Voice recording UI
-- [ ] AI event suggestions
-- [ ] Timeline summaries
-- [ ] Smart event connections
+### v2.3.0 (Released) ✅
+- [x] Voice recording UI with Web Speech API
+- [x] AI event suggestions with Claude 3.5
+- [x] Voice-to-event conversion
+- [x] Natural language date extraction
 
-### v2.4.0 (Planned)
-- [ ] Google Photos import
-- [ ] Email invitations for non-users
-- [ ] Map view of events
-- [ ] Video/audio upload UI
+### v2.4.0 (Released) ✅
+- [x] Email invitation system (database ready)
+- [x] Improved collaboration UI
+- [x] Permission management enhancements
 
-### v2.5.0 (Planned)
-- [ ] Premium features (Whisper API)
-- [ ] Mobile apps (React Native)
-- [ ] Ancestry.com partnership
-- [ ] Multi-language support
+### v2.5.0 (Beta) 🚧
+- [x] Google Photos import
+- [x] Google Sign-In OAuth
+- [x] Supabase Edge Function for import
+- [ ] SendGrid email delivery (configured but not enabled)
+
+### v3.0.0 (Planned) 📅
+- [ ] Map view of events with geolocation
+- [ ] Video/audio upload and playback
+- [ ] AI timeline summaries
+- [ ] Smart event connection suggestions
+- [ ] Mobile-optimized PWA
 
 ---
 
 ## 📊 Version History
 
-### v2.3.0-alpha (Current)
-**AI Features Foundation**
-- Claude 3.5 Sonnet integration
-- Voice-to-event service layer
-- AI enhancement methods
-- Timeline intelligence ready
+### v2.5.0-beta (Current)
+**Google Integration + AI Voice**
+- Google Photos import with OAuth 2.0
+- Google Sign-In authentication
+- Voice-to-event with Claude AI
+- Supabase Edge Functions
+- Email invitation backend
 
-### v2.1.0
+### v2.4.0 (December 2024)
+**Collaboration Enhancements**
+- Email invitation system
+- Enhanced sharing UI
+- Permission management improvements
+- Database optimizations
+
+### v2.3.0 (December 2024)
+**AI Features Launch**
+- Claude 3.5 Sonnet integration
+- Voice recording with Web Speech API
+- Natural language processing
+- Auto-extract dates and tags
+
+### v2.1.0 (November 2024)
 **Collaboration Features**
 - Share timelines with users
-- Permission management
-- Invitation system
+- Permission management (View/Edit/Admin)
 - Real-time collaboration
+- Invitation workflows
 
-### v2.0.4
+### v2.0.4 (November 2024)
 **Enhanced UX**
 - Keyboard shortcuts
 - Undo/Redo system
 - Toast notifications
 - Help modal
 
-### v1.0.0
+### v1.0.0 (October 2024)
 **MVP Release**
 - Core timeline functionality
-- Photo uploads
-- Export PDF
+- Photo uploads (IndexedDB)
+- Export PDF/JSON
 - Local-first storage
 
 **[Full Changelog](CHANGELOG.md)**
