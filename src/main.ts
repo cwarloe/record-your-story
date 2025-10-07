@@ -161,10 +161,10 @@ async function handleInvitationAcceptance(token: string) {
   const result = await invitationService.acceptInvitation(token);
 
   if (result.success) {
-    showToast('âœ… Invitation accepted! You now have access to the shared timeline.', 'success');
+    showToast('✅ Invitation accepted! You now have access to the shared timeline.', 'success');
     // The shared timeline will appear when we load user data
   } else {
-    showToast(`âŒ ${result.error || 'Failed to accept invitation'}`, 'error');
+    showToast(`❌ ${result.error || 'Failed to accept invitation'}`, 'error');
   }
 }
 
@@ -175,10 +175,10 @@ async function handleTimelineInvitationAcceptance(token: string) {
   const result = await supabase.acceptTimelineEmailInvitation(token);
 
   if (result.data) {
-    showToast('âœ… Timeline invitation accepted! You now have access to the shared timeline.', 'success');
+    showToast('✅ Timeline invitation accepted! You now have access to the shared timeline.', 'success');
     // The shared timeline will appear when we load user data
   } else {
-    showToast(`âŒ ${result.error?.message || 'Failed to accept timeline invitation'}`, 'error');
+    showToast(`❌ ${result.error?.message || 'Failed to accept timeline invitation'}`, 'error');
   }
 }
 
@@ -345,11 +345,11 @@ function showApp() {
             <button id="new-timeline-btn" class="btn btn-small" title="Create Timeline">+ Timeline</button>
           </div>
           <div class="header-actions">
-            <button id="undo-btn" class="btn btn-secondary btn-small" title="Undo (Ctrl+Z)" disabled style="opacity: 0.5;">â†¶ Undo</button>
-            <button id="redo-btn" class="btn btn-secondary btn-small" title="Redo (Ctrl+Y)" disabled style="opacity: 0.5;">â†· Redo</button>
-            <button id="export-pdf-btn" class="btn btn-secondary btn-small" title="Export to PDF">ðŸ“„ Export PDF</button>
-            ${((window as any).pendingTimelineInvitations || []).length > 0 ? `<button id="pending-invitations-btn" class="btn btn-primary btn-small" title="Pending Timeline Invitations">ðŸ“© ${((window as any).pendingTimelineInvitations || []).length}</button>` : ''}
-            <button id="theme-toggle" class="theme-toggle">ðŸŒ™</button>
+            <button id="undo-btn" class="btn btn-secondary btn-small" title="Undo (Ctrl+Z)" disabled style="opacity: 0.5;">↶ Undo</button>
+            <button id="redo-btn" class="btn btn-secondary btn-small" title="Redo (Ctrl+Y)" disabled style="opacity: 0.5;">↷ Redo</button>
+            <button id="export-pdf-btn" class="btn btn-secondary btn-small" title="Export to PDF">📄 Export PDF</button>
+            ${((window as any).pendingTimelineInvitations || []).length > 0 ? `<button id="pending-invitations-btn" class="btn btn-primary btn-small" title="Pending Timeline Invitations">📩 ${((window as any).pendingTimelineInvitations || []).length}</button>` : ''}
+            <button id="theme-toggle" class="theme-toggle">🌙</button>
             <span class="user-email">${currentUser?.email || 'User'}</span>
             <button id="signout-btn" class="btn btn-small">Sign Out</button>
           </div>
@@ -359,16 +359,16 @@ function showApp() {
         <div class="timeline-header">
           <h2>${currentTimeline?.name || 'My Story'}</h2>
           <div class="timeline-actions">
-            ${claude.isEnabled() ? '<button id="ai-summarize-btn" class="btn btn-secondary btn-small" title="AI Timeline Summary">ðŸ¤– Summarize</button>' : ''}
-            ${claude.isEnabled() ? '<button id="import-journal-btn" class="btn btn-secondary btn-small" title="Import Journal/Documents">ðŸ“ Import Journal</button>' : ''}
-            <button id="import-google-photos-btn" class="btn btn-secondary btn-small" title="Import from Google Photos">ðŸ“· Import Photos</button>
-            <button id="share-timeline-btn" class="btn btn-secondary btn-small" title="Share Timeline">ðŸ‘¥ Share</button>
+            ${claude.isEnabled() ? '<button id="ai-summarize-btn" class="btn btn-secondary btn-small" title="AI Timeline Summary">🤖 Summarize</button>' : ''}
+            ${claude.isEnabled() ? '<button id="import-journal-btn" class="btn btn-secondary btn-small" title="Import Journal/Documents">📝 Import Journal</button>' : ''}
+            <button id="import-google-photos-btn" class="btn btn-secondary btn-small" title="Import from Google Photos">📷 Import Photos</button>
+            <button id="share-timeline-btn" class="btn btn-secondary btn-small" title="Share Timeline">👥 Share</button>
             <button id="add-event-btn" class="btn btn-primary">+ Add Event</button>
           </div>
         </div>
 
         <div class="search-filter-bar">
-          <input type="text" id="search-input" placeholder="ðŸ” Search events..." value="${searchQuery}" />
+          <input type="text" id="search-input" placeholder="🔍 Search events..." value="${searchQuery}" />
           <input type="date" id="date-from" placeholder="From" value="${filterDateFrom}" />
           <input type="date" id="date-to" placeholder="To" value="${filterDateTo}" />
           <button id="clear-filters" class="btn btn-secondary btn-small">Clear Filters</button>
@@ -395,8 +395,8 @@ function showApp() {
 
             <label>Description</label>
             <div class="voice-recording-section">
-              <button type="button" id="voice-record-btn" class="btn btn-secondary btn-small">ðŸŽ¤ Record Story</button>
-              ${claude.isEnabled() ? '<button type="button" id="enhance-btn" class="btn btn-secondary btn-small">âœ¨ Enhance with AI</button>' : ''}
+              <button type="button" id="voice-record-btn" class="btn btn-secondary btn-small">🎤 Record Story</button>
+              ${claude.isEnabled() ? '<button type="button" id="enhance-btn" class="btn btn-secondary btn-small">✨ Enhance with AI</button>' : ''}
               <div id="recording-indicator" class="recording-indicator" style="display: none;">
                 <span class="pulse-dot"></span>
                 <span>Recording...</span>
@@ -408,7 +408,7 @@ function showApp() {
             <label>Photos</label>
             <div id="photo-drop-zone" class="photo-drop-zone">
               <div class="drop-zone-content">
-                <span class="drop-zone-icon">ðŸ“¸</span>
+                <span class="drop-zone-icon">📸</span>
                 <p>Drag & drop photos here</p>
                 <p class="drop-zone-or">or</p>
                 <label for="photo-upload" class="btn btn-secondary btn-small">Browse Files</label>
@@ -421,17 +421,17 @@ function showApp() {
             <input type="text" id="event-tags" placeholder="Type and press Enter to add tags" />
             <div id="tags-display" class="tags-display"></div>
 
-            <label>ðŸ”— Connected Events</label>
+            <label>🔗 Connected Events</label>
             <div id="connections-panel">
               <button type="button" id="add-connection-btn" class="btn btn-secondary btn-small">+ Link Event</button>
-              ${claude.isEnabled() ? '<button type="button" id="ai-suggest-connections-btn" class="btn btn-secondary btn-small">ðŸ¤– Suggest Links</button>' : ''}
+              ${claude.isEnabled() ? '<button type="button" id="ai-suggest-connections-btn" class="btn btn-secondary btn-small">🤖 Suggest Links</button>' : ''}
               <div id="connections-display" class="connections-display"></div>
             </div>
 
             <div class="invitation-section">
               <label class="checkbox-label">
                 <input type="checkbox" id="invite-checkbox" />
-                <span>ðŸ“§ Invite someone to see this event</span>
+                <span>📧 Invite someone to see this event</span>
               </label>
               <div id="invitation-fields" class="invitation-fields" style="display: none;">
                 <input
@@ -445,7 +445,7 @@ function showApp() {
                   <option value="collaborate">Can collaborate</option>
                 </select>
                 <p class="invitation-hint">
-                  ðŸ’¡ They'll receive an email invitation to sign up and view your timeline.
+                  💡 They'll receive an email invitation to sign up and view your timeline.
                   Perfect for sharing memories with family and friends!
                 </p>
               </div>
@@ -463,11 +463,11 @@ function showApp() {
         <div class="modal-overlay"></div>
         <div class="modal-content">
           <div class="modal-header">
-            <h3>ðŸ¤– AI Event Suggestions</h3>
+            <h3>🤖 AI Event Suggestions</h3>
             <button id="ai-modal-close" class="modal-close">&times;</button>
           </div>
           <div class="ai-suggestions-content">
-            <p class="transcript-label">Your story:</p>
+            <p class="transcript-label">📝 Your story:</p>
             <div id="ai-transcript" class="ai-transcript"></div>
 
             <div id="ai-loading" class="ai-loading">
@@ -476,7 +476,7 @@ function showApp() {
             </div>
 
             <div id="ai-suggestions" class="ai-suggestions" style="display: none;">
-              <h4>Suggested Event Details:</h4>
+              <h4>✨ Suggested Event Details:</h4>
               <div class="suggestion-field">
                 <label>Title:</label>
                 <p id="suggested-title"></p>
@@ -496,7 +496,7 @@ function showApp() {
             </div>
 
             <div class="modal-actions">
-              <button type="button" id="accept-suggestions-btn" class="btn btn-primary" style="display: none;">âœ“ Accept & Fill Form</button>
+              <button type="button" id="accept-suggestions-btn" class="btn btn-primary" style="display: none;">✅ Accept & Fill Form</button>
               <button type="button" id="reject-suggestions-btn" class="btn btn-secondary">Cancel</button>
             </div>
           </div>
@@ -666,7 +666,7 @@ function renderTimeline(): string {
               ${event.title}
               ${eventConnections.has(event.id) && eventConnections.get(event.id)!.length > 0
                 ? `<span class="connection-badge" title="Connected to ${eventConnections.get(event.id)!.length} event(s)">
-                    ðŸ”— ${eventConnections.get(event.id)!.length}
+                    🔗 ${eventConnections.get(event.id)!.length}
                   </span>`
                 : ''
               }
@@ -687,8 +687,8 @@ function renderTimeline(): string {
               : ''
             }
             <div class="event-actions">
-              <button class="btn-icon edit-btn" data-id="${event.id}" title="Edit">âœï¸</button>
-              <button class="btn-icon delete-btn" data-id="${event.id}" title="Delete">ðŸ—‘ï¸</button>
+              <button class="btn-icon edit-btn" data-id="${event.id}" title="Edit">✏️</button>
+              <button class="btn-icon delete-btn" data-id="${event.id}" title="Delete">🗑️</button>
             </div>
           </div>
         </div>
@@ -714,7 +714,7 @@ function startRecording() {
     isRecording = true;
     recognition.start();
     updateRecordingUI(true);
-    showToast('ðŸŽ¤ Recording started...', 'info');
+    showToast('🎤 Recording started...', 'info');
   } catch (error) {
     console.error('Failed to start recording:', error);
     showToast('Failed to start recording', 'error');
@@ -743,7 +743,7 @@ function updateRecordingUI(recording: boolean) {
   const indicator = document.getElementById('recording-indicator');
 
   if (btn) {
-    btn.textContent = recording ? 'â¹ï¸ Stop Recording' : 'ðŸŽ¤ Record Story';
+    btn.textContent = recording ? '⏹️ Stop Recording' : '🎤 Record Story';
     btn.classList.toggle('recording', recording);
   }
 
@@ -860,7 +860,7 @@ function acceptAISuggestions() {
     renderTags();
   }
 
-  showToast('âœ“ Form filled with AI suggestions', 'success');
+  showToast('✅ Form filled with AI suggestions', 'success');
 }
 
 // Show event modal (for create or edit)
@@ -1196,7 +1196,7 @@ async function handleAISuggestConnections() {
     });
 
     renderConnections();
-    showToast(`âœ¨ Added ${highConfidenceLinks.length} AI-suggested connection(s)!`, 'success');
+    showToast(`✨ Added ${highConfidenceLinks.length} AI-suggested connection(s)!`, 'success');
 
   } catch (error) {
     console.error('AI connection error:', error);
@@ -1267,7 +1267,7 @@ function renderConnections() {
       if (!event) return '';
       return `
         <div class="connection-item">
-          <span>ðŸ”— ${event.title} (${new Date(event.date).toLocaleDateString()})</span>
+          <span>🔗 ${event.title} (${new Date(event.date).toLocaleDateString()})</span>
           <button type="button" class="remove-connection" data-id="${connId}">&times;</button>
         </div>
       `;
@@ -1461,7 +1461,7 @@ async function handleGooglePhotosImport() {
 
     if (result.success) {
       showToast(
-        `âœ… Successfully imported ${result.imported} photos!${result.failed > 0 ? ` (${result.failed} failed)` : ''}`,
+        `✅ Successfully imported ${result.imported} photos!${result.failed > 0 ? ` (${result.failed} failed)` : ''}`,
         'success'
       );
 
@@ -1469,12 +1469,12 @@ async function handleGooglePhotosImport() {
       await loadUserData();
       showApp();
     } else {
-      showToast(`âŒ Import failed: ${result.error}`, 'error');
+      showToast(`❌ Import failed: ${result.error}`, 'error');
     }
 
   } catch (error) {
     console.error('Google Photos import error:', error);
-    showToast(`âŒ Import failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
+    showToast(`❌ Import failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
   }
 }
 
@@ -1508,7 +1508,7 @@ async function handleEnhanceEvent() {
   const enhanceBtn = document.getElementById('enhance-btn') as HTMLButtonElement;
   if (enhanceBtn) {
     enhanceBtn.disabled = true;
-    enhanceBtn.textContent = 'âœ¨ Enhancing...';
+    enhanceBtn.textContent = '✨ Enhancing...';
   }
 
   try {
@@ -1535,7 +1535,7 @@ async function handleEnhanceEvent() {
       renderTags();
     }
 
-    showToast('âœ¨ Event enhanced with AI!', 'success');
+    showToast('✨ Event enhanced with AI!', 'success');
 
   } catch (error) {
     console.error('Enhancement error:', error);
@@ -1543,7 +1543,7 @@ async function handleEnhanceEvent() {
   } finally {
     if (enhanceBtn) {
       enhanceBtn.disabled = false;
-      enhanceBtn.textContent = 'âœ¨ Enhance with AI';
+      enhanceBtn.textContent = '✨ Enhance with AI';
     }
   }
 }
@@ -1648,7 +1648,7 @@ async function handleEventSubmit(e: SubmitEvent) {
         sendInvitation(inviteEmail, inviteType, data.title);
       }
 
-      showToast('Event created successfully! âœ…', 'success');
+      showToast('Event created successfully! ✅', 'success');
       hideEventModal();
       refreshTimeline();
       initTheme();
@@ -1660,7 +1660,7 @@ async function handleEventSubmit(e: SubmitEvent) {
 async function sendInvitation(email: string, type: 'view' | 'collaborate', eventTitle: string) {
   if (!currentUser || !currentTimeline) return;
 
-  showToast('ðŸ“§ Sending invitation...', 'info');
+  showToast('📧 Sending invitation...', 'info');
 
   const result = await invitationService.sendInvitation({
     email,
@@ -1671,7 +1671,7 @@ async function sendInvitation(email: string, type: 'view' | 'collaborate', event
   });
 
   if (result.success) {
-    showToast(`âœ… Invitation sent to ${email}`, 'success');
+    showToast(`✅ Invitation sent to ${email}`, 'success');
   } else {
     showToast(`âŒ Failed to send invitation: ${result.error}`, 'error');
   }
@@ -2259,7 +2259,7 @@ async function showShareTimelineModal() {
       <div class="modal-overlay"></div>
       <div class="modal-content">
         <div class="modal-header">
-          <h3>ðŸ‘¥ Share "${currentTimeline.name}"</h3>
+          <h3>👥 Share "${currentTimeline.name}"</h3>
           <button id="share-modal-close" class="modal-close">&times;</button>
         </div>
 
@@ -2291,7 +2291,7 @@ async function showShareTimelineModal() {
                       <option value="admin" ${share.permission_level === 'admin' ? 'selected' : ''}>Admin</option>
                     </select>
                   </div>
-                  <button class="btn-icon remove-share" data-share-id="${share.id}" title="Remove access">ðŸ—‘ï¸</button>
+                  <button class="btn-icon remove-share" data-share-id="${share.id}" title="Remove access">🗑️</button>
                 </div>
               `).join('')
               : '<p class="empty-text">Not shared with anyone yet</p>'
@@ -2380,24 +2380,24 @@ async function showAISummaryModal() {
       <div class="modal-overlay"></div>
       <div class="modal-content" style="max-width: 700px;">
         <div class="modal-header">
-          <h3>ðŸ¤– AI Timeline Summary</h3>
+          <h3>🤖 AI Timeline Summary</h3>
           <button id="ai-summary-close" class="modal-close">&times;</button>
         </div>
 
         <div style="padding: 20px;">
           <div id="summary-loading" style="text-align: center; padding: 40px;">
             <div class="spinner" style="margin: 0 auto 20px;"></div>
-            <p>Claude is analyzing your timeline...</p>
+            <p>🤖 Claude is analyzing your timeline...</p>
           </div>
 
           <div id="summary-content" style="display: none;">
             <div class="summary-section">
-              <h4>ðŸ“– Narrative Summary</h4>
+              <h4>📖 Narrative Summary</h4>
               <p id="summary-text" style="line-height: 1.6; color: #444;"></p>
             </div>
 
             <div class="summary-section" style="margin-top: 24px;">
-              <h4>ðŸ’¡ Key Insights</h4>
+              <h4>💡 Key Insights</h4>
               <ul id="insights-list" style="line-height: 1.8;"></ul>
             </div>
           </div>
@@ -2478,7 +2478,7 @@ async function showPendingInvitationsModal() {
       <div class="modal-overlay"></div>
       <div class="modal-content">
         <div class="modal-header">
-          <h3>ðŸ“© Pending Timeline Invitations</h3>
+          <h3>📩 Pending Timeline Invitations</h3>
           <button id="pending-invitations-close" class="modal-close">&times;</button>
         </div>
 
@@ -2508,11 +2508,11 @@ async function showPendingInvitationsModal() {
                     <button class="accept-invitation-btn btn btn-primary btn-small"
                             data-invite-id="${invite.id}"
                             data-token="${invite.invitation_token}">
-                      âœ“ Accept
+                      ✅ Accept
                     </button>
                     <button class="decline-invitation-btn btn btn-secondary btn-small"
                             data-invite-id="${invite.id}">
-                      âŒ Decline
+                      ❌ Decline
                     </button>
                   </div>
                 </div>
@@ -2542,7 +2542,7 @@ async function showPendingInvitationsModal() {
       if (token) {
         const result = await supabase.acceptTimelineEmailInvitation(token);
         if (result.data) {
-          showToast('âœ… Timeline invitation accepted!', 'success');
+          showToast('✅ Timeline invitation accepted!', 'success');
           // Remove from pending list
           const inviteId = target.getAttribute('data-invite-id');
           (window as any).pendingTimelineInvitations = (window as any).pendingTimelineInvitations.filter((inv: any) => inv.id !== inviteId);
@@ -2604,7 +2604,7 @@ async function showDocumentImportModal() {
       <div class="modal-overlay"></div>
       <div class="modal-content" style="max-width: 800px;">
         <div class="modal-header">
-          <h3>ðŸ“ Import Journal/Documents</h3>
+          <h3>📝 Import Journal/Documents</h3>
           <button id="doc-import-close" class="modal-close">&times;</button>
         </div>
 
@@ -2652,7 +2652,7 @@ async function showDocumentImportModal() {
             transition: all 0.3s;
             background: #f9f9f9;
           ">
-            <div style="font-size: 48px; margin-bottom: 12px;">ðŸ“„</div>
+            <div style="font-size: 48px; margin-bottom: 12px;">📄</div>
             <p style="font-size: 16px; font-weight: 500; margin-bottom: 8px;">
               Drop files here or click to browse
             </p>
@@ -2677,7 +2677,7 @@ async function showDocumentImportModal() {
           <!-- Google Drive panel -->
           <div id="drive-panel" style="display: none;">
             <div id="drive-auth-section" style="text-align: center; padding: 40px;">
-              <div style="font-size: 48px; margin-bottom: 12px;">ðŸ“</div>
+              <div style="font-size: 48px; margin-bottom: 12px;">📁</div>
               <h4 style="margin-bottom: 16px;">Connect to Google Drive</h4>
               <p style="color: #666; margin-bottom: 24px;">
                 Access your documents from Google Drive and import them to your timeline.
@@ -2730,7 +2730,7 @@ async function showDocumentImportModal() {
           </div>
 
           <div id="events-preview" style="display: none; margin-top: 20px;">
-            <h4 style="margin-bottom: 12px;">ðŸ“‹ Extracted Events Preview:</h4>
+            <h4 style="margin-bottom: 12px;">📋 Extracted Events Preview:</h4>
             <div id="preview-container" style="
               max-height: 400px;
               overflow-y: auto;
@@ -2746,7 +2746,7 @@ async function showDocumentImportModal() {
 
         <div class="modal-actions">
           <button id="import-events-btn" class="btn btn-primary" style="display: none;">
-            âœ“ Import All Events
+            ✅ Import All Events
           </button>
           <button id="cancel-import-btn" class="btn btn-secondary">Cancel</button>
         </div>
@@ -2970,7 +2970,7 @@ async function showDocumentImportModal() {
             ">${event.confidence}% confidence</span>
           </div>
           <div style="color: #666; font-size: 14px; margin-bottom: 8px;">
-            ðŸ“… ${event.date === 'unknown' ? 'Date unknown' : event.date}
+            📅 ${event.date === 'unknown' ? 'Date unknown' : event.date}
           </div>
           <div style="font-size: 14px; line-height: 1.5; margin-bottom: 8px;">
             ${event.description}
