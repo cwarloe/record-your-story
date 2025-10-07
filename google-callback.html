@@ -48,7 +48,7 @@
 <body>
   <div class="container">
     <div class="spinner"></div>
-    <h2>Authorizing Google Photos...</h2>
+    <h2 id="title">Authorizing Google...</h2>
     <p id="status">Please wait while we complete the authorization.</p>
     <div id="error" class="error" style="display: none;"></div>
   </div>
@@ -63,11 +63,20 @@
       const error = params.get('error')
       const state = params.get('state')
 
-      // Verify state matches
-      if (state !== 'google-photos-import') {
+      // Verify state matches (supports both Photos and Drive)
+      const validStates = ['google-photos-import', 'google_drive_import']
+      if (!validStates.includes(state)) {
         return {
           error: 'Invalid state parameter. Possible CSRF attack.',
         }
+      }
+
+      // Update title based on service
+      const titleEl = document.getElementById('title')
+      if (titleEl) {
+        titleEl.textContent = state === 'google_drive_import'
+          ? 'Authorizing Google Drive...'
+          : 'Authorizing Google Photos...'
       }
 
       if (error) {
@@ -86,6 +95,7 @@
         accessToken,
         expiresIn: parseInt(params.get('expires_in') || '3600'),
         tokenType: params.get('token_type') || 'Bearer',
+        state,
       }
     }
 
@@ -120,11 +130,16 @@
         }, 3000)
 
       } else {
-        // Success - send token to parent
+        // Success - send token to parent with appropriate event type
+        const messageType = result.state === 'google_drive_import'
+          ? 'google_drive_auth_success'
+          : 'google-oauth-success'
+
         sendMessageToParent({
-          type: 'google-oauth-success',
+          type: messageType,
           accessToken: result.accessToken,
           expiresIn: result.expiresIn,
+          state: result.state,
         })
 
         document.getElementById('status').textContent = 'Authorization successful! Closing window...'

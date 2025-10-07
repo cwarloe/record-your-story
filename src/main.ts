@@ -3,6 +3,7 @@ import { claude } from '@/services/claude';
 import { invitationService } from '@/services/invitations';
 import { googlePhotosService } from '@/services/google-photos';
 import { documentImportService } from '@/services/document-import';
+import { googleDrive } from '@/services/google-drive';
 import type { User, Timeline, TimelineEvent } from '@/types';
 import Quill from 'quill';
 import 'quill/dist/quill.snow.css';
@@ -2454,7 +2455,37 @@ async function showDocumentImportModal() {
             Upload text files, journal entries, or documents. AI will analyze them and extract life events for your timeline.
           </p>
 
-          <div id="upload-zone" style="
+          <!-- Import source tabs -->
+          <div style="display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 2px solid #eee;">
+            <button id="tab-upload" class="import-tab active" style="
+              flex: 1;
+              padding: 12px;
+              border: none;
+              background: none;
+              cursor: pointer;
+              font-weight: 500;
+              border-bottom: 3px solid #6c5b7b;
+              color: #6c5b7b;
+            ">
+              📤 Upload Files
+            </button>
+            <button id="tab-drive" class="import-tab" style="
+              flex: 1;
+              padding: 12px;
+              border: none;
+              background: none;
+              cursor: pointer;
+              font-weight: 500;
+              border-bottom: 3px solid transparent;
+              color: #666;
+            ">
+              📁 Google Drive
+            </button>
+          </div>
+
+          <!-- Upload panel -->
+          <div id="upload-panel">
+            <div id="upload-zone" style="
             border: 2px dashed #ccc;
             border-radius: 8px;
             padding: 40px;
@@ -2482,6 +2513,52 @@ async function showDocumentImportModal() {
           <div id="file-list" style="margin-top: 20px; display: none;">
             <h4 style="margin-bottom: 12px;">Selected Files:</h4>
             <div id="files-container"></div>
+          </div>
+          </div>
+
+          <!-- Google Drive panel -->
+          <div id="drive-panel" style="display: none;">
+            <div id="drive-auth-section" style="text-align: center; padding: 40px;">
+              <div style="font-size: 48px; margin-bottom: 12px;">📁</div>
+              <h4 style="margin-bottom: 16px;">Connect to Google Drive</h4>
+              <p style="color: #666; margin-bottom: 24px;">
+                Access your documents from Google Drive and import them to your timeline.
+              </p>
+              <button id="connect-drive-btn" class="btn btn-primary">
+                Connect Google Drive
+              </button>
+            </div>
+
+            <div id="drive-files-section" style="display: none;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h4>Your Documents</h4>
+                <button id="disconnect-drive-btn" style="
+                  background: none;
+                  border: none;
+                  color: #e74c3c;
+                  cursor: pointer;
+                  font-size: 14px;
+                  text-decoration: underline;
+                ">Disconnect</button>
+              </div>
+
+              <div id="drive-files-list" style="
+                max-height: 400px;
+                overflow-y: auto;
+                border: 1px solid #ddd;
+                border-radius: 8px;
+              ">
+                <div id="drive-files-loading" style="text-align: center; padding: 40px;">
+                  <div class="spinner" style="margin: 0 auto 16px;"></div>
+                  <p>Loading documents...</p>
+                </div>
+                <div id="drive-files-container" style="display: none;"></div>
+              </div>
+
+              <button id="import-selected-drive-btn" class="btn btn-primary" style="margin-top: 16px; display: none;">
+                Import Selected Files
+              </button>
+            </div>
           </div>
 
           <div id="analysis-progress" style="display: none; margin-top: 20px;">
@@ -2526,9 +2603,41 @@ async function showDocumentImportModal() {
   const fileInput = document.getElementById('file-input') as HTMLInputElement;
   const fileList = document.getElementById('file-list');
   const filesContainer = document.getElementById('files-container');
+  const uploadPanel = document.getElementById('upload-panel');
+  const drivePanel = document.getElementById('drive-panel');
+  const tabUpload = document.getElementById('tab-upload');
+  const tabDrive = document.getElementById('tab-drive');
 
   let selectedFiles: File[] = [];
   let extractedEvents: any[] = [];
+  let selectedDriveFiles: string[] = []; // Drive file IDs
+
+  // Tab switching
+  function switchTab(tab: 'upload' | 'drive') {
+    if (tab === 'upload') {
+      uploadPanel!.style.display = 'block';
+      drivePanel!.style.display = 'none';
+      tabUpload!.style.borderBottom = '3px solid #6c5b7b';
+      tabUpload!.style.color = '#6c5b7b';
+      tabDrive!.style.borderBottom = '3px solid transparent';
+      tabDrive!.style.color = '#666';
+    } else {
+      uploadPanel!.style.display = 'none';
+      drivePanel!.style.display = 'block';
+      tabUpload!.style.borderBottom = '3px solid transparent';
+      tabUpload!.style.color = '#666';
+      tabDrive!.style.borderBottom = '3px solid #6c5b7b';
+      tabDrive!.style.color = '#6c5b7b';
+
+      // Check if already authenticated
+      if (googleDrive.isAuthenticated()) {
+        showDriveFiles();
+      }
+    }
+  }
+
+  tabUpload?.addEventListener('click', () => switchTab('upload'));
+  tabDrive?.addEventListener('click', () => switchTab('drive'));
 
   // Click to browse
   uploadZone?.addEventListener('click', () => fileInput?.click());
@@ -2762,6 +2871,181 @@ async function showDocumentImportModal() {
       }
     }
   }
+
+  // Google Drive functions
+  async function connectDrive() {
+    if (!googleDrive.isEnabled()) {
+      showToast('Google Drive not configured. Add VITE_GOOGLE_DRIVE_CLIENT_ID to enable.', 'error');
+      return;
+    }
+
+    try {
+      await googleDrive.authorize();
+      await showDriveFiles();
+    } catch (error: any) {
+      console.error('Drive authorization error:', error);
+      showToast(error.message || 'Failed to connect to Google Drive', 'error');
+    }
+  }
+
+  async function showDriveFiles() {
+    const authSection = document.getElementById('drive-auth-section');
+    const filesSection = document.getElementById('drive-files-section');
+    const filesLoading = document.getElementById('drive-files-loading');
+    const filesContainer = document.getElementById('drive-files-container');
+
+    if (authSection) authSection.style.display = 'none';
+    if (filesSection) filesSection.style.display = 'block';
+    if (filesLoading) filesLoading.style.display = 'block';
+    if (filesContainer) filesContainer.style.display = 'none';
+
+    try {
+      const files = await googleDrive.listDocuments({
+        maxResults: 50
+      });
+
+      if (filesLoading) filesLoading.style.display = 'none';
+      if (filesContainer) {
+        filesContainer.style.display = 'block';
+
+        if (files.length === 0) {
+          filesContainer.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #888;">
+              <p>No documents found in your Google Drive.</p>
+              <p style="font-size: 14px; margin-top: 8px;">We're looking for .txt, .docx, .pdf, and Google Docs files.</p>
+            </div>
+          `;
+        } else {
+          filesContainer.innerHTML = files.map(file => `
+            <div class="drive-file-item" data-file-id="${file.id}" style="
+              display: flex;
+              align-items: center;
+              padding: 12px;
+              border-bottom: 1px solid #eee;
+              cursor: pointer;
+              transition: background 0.2s;
+            " onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='white'">
+              <input type="checkbox" class="drive-file-checkbox" data-file-id="${file.id}" style="margin-right: 12px;" />
+              <div style="flex: 1;">
+                <div style="font-weight: 500; margin-bottom: 4px;">${file.name}</div>
+                <div style="font-size: 13px; color: #888;">
+                  ${file.size ? (parseInt(file.size) / 1024).toFixed(1) + ' KB' : 'N/A'} •
+                  ${new Date(file.modifiedTime).toLocaleDateString()}
+                </div>
+              </div>
+            </div>
+          `).join('');
+
+          // Add checkbox handlers
+          document.querySelectorAll('.drive-file-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', (e) => {
+              const fileId = (e.target as HTMLInputElement).getAttribute('data-file-id')!;
+              const checked = (e.target as HTMLInputElement).checked;
+
+              if (checked) {
+                selectedDriveFiles.push(fileId);
+              } else {
+                selectedDriveFiles = selectedDriveFiles.filter(id => id !== fileId);
+              }
+
+              const importBtn = document.getElementById('import-selected-drive-btn');
+              if (importBtn) {
+                importBtn.style.display = selectedDriveFiles.length > 0 ? 'inline-block' : 'none';
+              }
+            });
+          });
+        }
+      }
+
+    } catch (error: any) {
+      console.error('Failed to list Drive files:', error);
+      if (filesLoading) filesLoading.style.display = 'none';
+      if (filesContainer) {
+        filesContainer.style.display = 'block';
+        filesContainer.innerHTML = `
+          <div style="text-align: center; padding: 40px; color: #e74c3c;">
+            <p>Failed to load files from Google Drive.</p>
+            <p style="font-size: 14px; margin-top: 8px;">${error.message}</p>
+          </div>
+        `;
+      }
+    }
+  }
+
+  async function importFromDrive() {
+    if (selectedDriveFiles.length === 0) return;
+
+    const progressSection = document.getElementById('analysis-progress');
+    const progressText = document.getElementById('progress-text');
+    const progressBar = document.getElementById('progress-bar');
+
+    if (progressSection) progressSection.style.display = 'block';
+    if (progressText) progressText.textContent = 'Downloading files from Google Drive...';
+
+    try {
+      // Download files from Drive
+      const files = await googleDrive.importDocuments(
+        selectedDriveFiles,
+        (current, total) => {
+          if (progressText) {
+            progressText.textContent = `Downloading ${current}/${total} files...`;
+          }
+          if (progressBar) {
+            progressBar.style.width = `${(current / total) * 50}%`;
+          }
+        }
+      );
+
+      // Analyze with document import service
+      if (progressText) progressText.textContent = 'Analyzing documents with AI...';
+
+      const result = await documentImportService.processDocuments(
+        files,
+        (current, total) => {
+          if (progressText) {
+            progressText.textContent = `Analyzing ${current}/${total} documents...`;
+          }
+          if (progressBar) {
+            progressBar.style.width = `${50 + (current / total) * 50}%`;
+          }
+        }
+      );
+
+      if (progressSection) progressSection.style.display = 'none';
+
+      if (!result.success || result.allEvents.length === 0) {
+        showToast(result.errors[0] || 'No events found in documents', 'error');
+        return;
+      }
+
+      // Show preview
+      extractedEvents = result.allEvents;
+      showEventsPreview(extractedEvents);
+
+      if (result.errors.length > 0) {
+        showToast(`Processed ${result.processed} files, ${result.failed} failed`, 'warning');
+      } else {
+        showToast(`Found ${extractedEvents.length} events in ${result.processed} documents`, 'success');
+      }
+
+    } catch (error: any) {
+      console.error('Drive import error:', error);
+      if (progressSection) progressSection.style.display = 'none';
+      showToast('Failed to import from Google Drive: ' + error.message, 'error');
+    }
+  }
+
+  // Google Drive event listeners
+  document.getElementById('connect-drive-btn')?.addEventListener('click', connectDrive);
+  document.getElementById('disconnect-drive-btn')?.addEventListener('click', async () => {
+    await googleDrive.revokeAccess();
+    const authSection = document.getElementById('drive-auth-section');
+    const filesSection = document.getElementById('drive-files-section');
+    if (authSection) authSection.style.display = 'block';
+    if (filesSection) filesSection.style.display = 'none';
+    showToast('Disconnected from Google Drive', 'success');
+  });
+  document.getElementById('import-selected-drive-btn')?.addEventListener('click', importFromDrive);
 
   // Close handlers
   document.getElementById('doc-import-close')?.addEventListener('click', hideDocumentImportModal);
