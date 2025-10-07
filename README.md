@@ -1,10 +1,10 @@
-# 🤖 Record Your Story v2.7.1
+# 🤖 Record Your Story v2.7.2
 ### Your memories, powered by AI
 
 > **A personal timeline application that uses Claude AI to transform how you capture and share life's moments.**
 
 [![Live Demo](https://img.shields.io/badge/🚀-Live%20Demo-7266FF)](https://record-your-story.onrender.com)
-[![Version](https://img.shields.io/badge/version-2.7.1-blue)](https://github.com/cwarloe/record-your-story/releases)
+[![Version](https://img.shields.io/badge/version-2.7.2-blue)](https://github.com/cwarloe/record-your-story/releases)
 [![License](https://img.shields.io/badge/license-ISC-green)](LICENSE)
 
 ---
@@ -96,6 +96,7 @@ npm run build
 - **🤖 AI-Powered Imports** 🆕
   - **Document Analysis**: Upload journals/text files, AI extracts events
   - **Google Drive**: Import directly from Drive with OAuth 2.0 🆕
+  - **Smart Deduplication**: Automatically prevents duplicate imports 🆕
   - **Voice-to-Event**: Speak your story, AI creates the event
   - **Smart Date Detection**: Recognizes "March 2015", "last summer", etc.
   - **Emotional Preservation**: Keeps your authentic voice
@@ -137,8 +138,8 @@ npm run build
 ### 🚧 Coming in v3.0
 
 - **Claude Chat History Import** - Extract events from conversations
-- **Enhanced Deduplication** - Smart detection of duplicate imports
 - **Advanced Date Parsing** - More natural language date formats
+- **Manual Duplicate Review** - Review and merge potential duplicates
 - **Gmail Integration** - Import events from email
 - **Google Calendar Import** - Sync events from calendar
 - **Map View** - See your events on an interactive map
