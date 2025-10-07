@@ -2,6 +2,71 @@
 
 All notable changes to Record Your Story will be documented in this file.
 
+## [2.7.0] - 2025-10-06
+
+### 🤖 Document Import with AI Analysis
+
+**New Feature:** Upload journal entries, text files, or documents and let AI automatically extract life events for your timeline.
+
+### ✨ What's New
+
+#### Document Import System
+- **Drag & Drop Upload**: Intuitive file upload with visual drag-and-drop zone
+- **Multi-File Processing**: Batch process multiple documents at once
+- **AI Event Extraction**: Claude 3.5 Sonnet analyzes documents and identifies life events
+- **Smart Preview**: Review extracted events with confidence scores before importing
+- **Progress Tracking**: Real-time progress bar for batch document analysis
+- **Supported Formats**: .txt, .docx, .pdf, .json files
+
+#### AI Capabilities
+- **Date Detection**: Automatically identifies dates (e.g., "March 2015", "last summer")
+- **Event Splitting**: Separates multiple journal entries from single documents
+- **Emotional Preservation**: Maintains authentic voice and emotional language
+- **Auto-Tagging**: Suggests relevant tags for each extracted event
+- **Confidence Scoring**: Shows reliability estimate (0-100%) for each event
+- **Source Tracking**: Preserves original text snippets for reference
+
+#### User Experience
+1. Click "📝 Import Journal" button in timeline header
+2. Drag files or click to browse
+3. AI automatically analyzes and extracts events
+4. Preview events with confidence scores and source text
+5. Import all events with one click
+
+### 🛠️ Technical Details
+
+**New Files:**
+- `src/services/document-import.ts` - Document parsing and analysis service
+  - `ParsedDocument` interface for file metadata
+  - `ExtractedEvent` interface for AI-extracted events
+  - `processDocuments()` for batch processing
+  - `analyzeDocument()` for AI analysis
+
+**Updated Files:**
+- `src/services/claude.ts` - Added `extractEventsFromDocument()` method
+  - Specialized prompt for journal/document analysis
+  - Preserves emotional authenticity
+  - Handles ~15k character documents
+- `src/main.ts` - Added document import modal and UI
+  - 350+ lines of import functionality
+  - Event preview with confidence indicators
+  - Batch import with error handling
+
+### 🎯 Use Cases
+
+- Import old journal entries from other apps
+- Extract events from diary text files
+- Process exported notes from Google Docs/Word
+- Bulk import life events from text archives
+- Convert unstructured writing into timeline events
+
+### 🔜 Coming Next (v2.7.1)
+
+- Google Drive OAuth integration
+- Direct import from Google Docs
+- Smart deduplication for imported events
+- Enhanced date parsing for more formats
+
 ## [2.1.0-alpha] - 2025-10-05
 
 ### 🤝 Collaboration Foundation

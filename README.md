@@ -1,17 +1,26 @@
-# 🤖 Record Your Story v2.0
+# 🤖 Record Your Story v2.7
 ### Your memories, powered by AI
 
 > **A personal timeline application that uses Claude AI to transform how you capture and share life's moments.**
 
 [![Live Demo](https://img.shields.io/badge/🚀-Live%20Demo-7266FF)](https://record-your-story.onrender.com)
-[![Version](https://img.shields.io/badge/version-2.5.0--beta-blue)](https://github.com/cwarloe/record-your-story/releases)
+[![Version](https://img.shields.io/badge/version-2.7.0-blue)](https://github.com/cwarloe/record-your-story/releases)
 [![License](https://img.shields.io/badge/license-ISC-green)](LICENSE)
 
 ---
 
-## ✨ What Makes v2.0 Special
+## ✨ What Makes v2.7 Special
 
 **Record Your Story** isn't just another timeline app. It's the first personal timeline powered by AI that understands your stories and helps you share them with the people who matter.
+
+### 📝 Document Import with AI Analysis (NEW!)
+Transform journals and text files into timeline events automatically
+- Upload .txt, .docx, .pdf, or .json files
+- AI extracts life events with dates and context
+- Drag & drop multiple files for batch processing
+- Preview events with confidence scores before importing
+- Preserves your authentic voice and emotions
+- Perfect for importing old diaries, notes, and journal exports
 
 ### 🎤 Voice-to-Event (Live Now!)
 Just speak naturally - Claude AI creates the event for you
@@ -28,10 +37,12 @@ Share timelines with family and friends
 
 ### 🤖 AI Assistant (Live Now!)
 Claude 3.5 Sonnet enhances your memories
-- Voice-to-event: Speak naturally, AI creates the event
-- Auto-extract dates from natural language
-- Auto-generate tags and descriptions
-- Smart event suggestions
+- **Document Analysis**: Extract events from journals automatically
+- **Voice-to-Event**: Speak naturally, AI creates the event
+- **Timeline Summary**: Generate narrative summaries of your life
+- **Smart Connections**: Discover relationships between events
+- **Auto-Tagging**: AI suggests relevant tags
+- **Event Enhancement**: Expand and enrich descriptions
 
 ### 📷 Google Photos Integration (Beta)
 Import your memories directly from Google Photos
@@ -80,11 +91,20 @@ npm run build
 
 ### ✅ Available Now
 
+- **🤖 AI-Powered Imports** 🆕
+  - **Document Analysis**: Upload journals/text files, AI extracts events
+  - **Voice-to-Event**: Speak your story, AI creates the event
+  - **Smart Date Detection**: Recognizes "March 2015", "last summer", etc.
+  - **Emotional Preservation**: Keeps your authentic voice
+  - **Batch Processing**: Import multiple documents at once
+  - **Confidence Scoring**: See reliability of extracted events
+
 - **Rich Event Creation**
   - Formatted text editor (Quill.js)
   - Photo uploads (unlimited via IndexedDB)
   - Tags and categories
   - Event connections (link related memories)
+  - AI Enhancement (expand descriptions with Claude)
 
 - **Timeline Collaboration** 🆕
   - Share timelines by email
@@ -97,6 +117,8 @@ npm run build
   - Filter by date range
   - Tag-based filtering
   - Year markers on timeline
+  - AI Timeline Summary (narrative overview)
+  - Smart Connections (discover related events)
 
 - **Productivity**
   - Undo/Redo (Ctrl+Z/Y)
@@ -111,10 +133,11 @@ npm run build
 
 ### 🚧 Coming in v3.0
 
+- **Google Drive Integration** - Import directly from Google Docs
+- **Claude Chat History Import** - Extract events from conversations
 - **Map View** - See your events on an interactive map
 - **Video/Audio Upload** - Rich media beyond photos
-- **Timeline Summaries** - "Tell me about 2023" with AI
-- **Smart Connections** - AI suggests related events
+- **Enhanced Deduplication** - Smart detection of duplicate imports
 - **SendGrid Email** - Send invitations to non-users
 
 ---
