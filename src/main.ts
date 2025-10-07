@@ -1,4 +1,5 @@
-import { supabase } from '@/services/supabase';
+﻿import { supabase } from '@/services/supabase';
+import { createEvent } from "./services/events";
 import { claude } from '@/services/claude';
 import { invitationService } from '@/services/invitations';
 import { googlePhotosService } from '@/services/google-photos';
@@ -25,7 +26,7 @@ let currentConnections: string[] = []; // Event IDs to connect
 
 // AI / Voice state (v2.3.0)
 if (claude.isEnabled()) {
-  console.log('🤖 AI features enabled');
+  console.log('ðŸ¤– AI features enabled');
 }
 
 // Web Speech API
@@ -146,10 +147,10 @@ async function handleInvitationAcceptance(token: string) {
   const result = await invitationService.acceptInvitation(token);
 
   if (result.success) {
-    showToast('✅ Invitation accepted! You now have access to the shared timeline.', 'success');
+    showToast('âœ… Invitation accepted! You now have access to the shared timeline.', 'success');
     // The shared timeline will appear when we load user data
   } else {
-    showToast(`❌ ${result.error || 'Failed to accept invitation'}`, 'error');
+    showToast(`âŒ ${result.error || 'Failed to accept invitation'}`, 'error');
   }
 }
 
@@ -310,10 +311,10 @@ function showApp() {
             <button id="new-timeline-btn" class="btn btn-small" title="Create Timeline">+ Timeline</button>
           </div>
           <div class="header-actions">
-            <button id="undo-btn" class="btn btn-secondary btn-small" title="Undo (Ctrl+Z)" disabled style="opacity: 0.5;">↶ Undo</button>
-            <button id="redo-btn" class="btn btn-secondary btn-small" title="Redo (Ctrl+Y)" disabled style="opacity: 0.5;">↷ Redo</button>
-            <button id="export-pdf-btn" class="btn btn-secondary btn-small" title="Export to PDF">📄 Export PDF</button>
-            <button id="theme-toggle" class="theme-toggle">🌙</button>
+            <button id="undo-btn" class="btn btn-secondary btn-small" title="Undo (Ctrl+Z)" disabled style="opacity: 0.5;">â†¶ Undo</button>
+            <button id="redo-btn" class="btn btn-secondary btn-small" title="Redo (Ctrl+Y)" disabled style="opacity: 0.5;">â†· Redo</button>
+            <button id="export-pdf-btn" class="btn btn-secondary btn-small" title="Export to PDF">ðŸ“„ Export PDF</button>
+            <button id="theme-toggle" class="theme-toggle">ðŸŒ™</button>
             <span class="user-email">${currentUser?.email || 'User'}</span>
             <button id="signout-btn" class="btn btn-small">Sign Out</button>
           </div>
@@ -323,16 +324,16 @@ function showApp() {
         <div class="timeline-header">
           <h2>${currentTimeline?.name || 'My Story'}</h2>
           <div class="timeline-actions">
-            ${claude.isEnabled() ? '<button id="ai-summarize-btn" class="btn btn-secondary btn-small" title="AI Timeline Summary">🤖 Summarize</button>' : ''}
-            ${claude.isEnabled() ? '<button id="import-journal-btn" class="btn btn-secondary btn-small" title="Import Journal/Documents">📝 Import Journal</button>' : ''}
-            <button id="import-google-photos-btn" class="btn btn-secondary btn-small" title="Import from Google Photos">📷 Import Photos</button>
-            <button id="share-timeline-btn" class="btn btn-secondary btn-small" title="Share Timeline">👥 Share</button>
+            ${claude.isEnabled() ? '<button id="ai-summarize-btn" class="btn btn-secondary btn-small" title="AI Timeline Summary">ðŸ¤– Summarize</button>' : ''}
+            ${claude.isEnabled() ? '<button id="import-journal-btn" class="btn btn-secondary btn-small" title="Import Journal/Documents">ðŸ“ Import Journal</button>' : ''}
+            <button id="import-google-photos-btn" class="btn btn-secondary btn-small" title="Import from Google Photos">ðŸ“· Import Photos</button>
+            <button id="share-timeline-btn" class="btn btn-secondary btn-small" title="Share Timeline">ðŸ‘¥ Share</button>
             <button id="add-event-btn" class="btn btn-primary">+ Add Event</button>
           </div>
         </div>
 
         <div class="search-filter-bar">
-          <input type="text" id="search-input" placeholder="🔍 Search events..." value="${searchQuery}" />
+          <input type="text" id="search-input" placeholder="ðŸ” Search events..." value="${searchQuery}" />
           <input type="date" id="date-from" placeholder="From" value="${filterDateFrom}" />
           <input type="date" id="date-to" placeholder="To" value="${filterDateTo}" />
           <button id="clear-filters" class="btn btn-secondary btn-small">Clear Filters</button>
@@ -359,8 +360,8 @@ function showApp() {
 
             <label>Description</label>
             <div class="voice-recording-section">
-              <button type="button" id="voice-record-btn" class="btn btn-secondary btn-small">🎤 Record Story</button>
-              ${claude.isEnabled() ? '<button type="button" id="enhance-btn" class="btn btn-secondary btn-small">✨ Enhance with AI</button>' : ''}
+              <button type="button" id="voice-record-btn" class="btn btn-secondary btn-small">ðŸŽ¤ Record Story</button>
+              ${claude.isEnabled() ? '<button type="button" id="enhance-btn" class="btn btn-secondary btn-small">âœ¨ Enhance with AI</button>' : ''}
               <div id="recording-indicator" class="recording-indicator" style="display: none;">
                 <span class="pulse-dot"></span>
                 <span>Recording...</span>
@@ -372,7 +373,7 @@ function showApp() {
             <label>Photos</label>
             <div id="photo-drop-zone" class="photo-drop-zone">
               <div class="drop-zone-content">
-                <span class="drop-zone-icon">📸</span>
+                <span class="drop-zone-icon">ðŸ“¸</span>
                 <p>Drag & drop photos here</p>
                 <p class="drop-zone-or">or</p>
                 <label for="photo-upload" class="btn btn-secondary btn-small">Browse Files</label>
@@ -385,17 +386,17 @@ function showApp() {
             <input type="text" id="event-tags" placeholder="Type and press Enter to add tags" />
             <div id="tags-display" class="tags-display"></div>
 
-            <label>🔗 Connected Events</label>
+            <label>ðŸ”— Connected Events</label>
             <div id="connections-panel">
               <button type="button" id="add-connection-btn" class="btn btn-secondary btn-small">+ Link Event</button>
-              ${claude.isEnabled() ? '<button type="button" id="ai-suggest-connections-btn" class="btn btn-secondary btn-small">🤖 Suggest Links</button>' : ''}
+              ${claude.isEnabled() ? '<button type="button" id="ai-suggest-connections-btn" class="btn btn-secondary btn-small">ðŸ¤– Suggest Links</button>' : ''}
               <div id="connections-display" class="connections-display"></div>
             </div>
 
             <div class="invitation-section">
               <label class="checkbox-label">
                 <input type="checkbox" id="invite-checkbox" />
-                <span>📧 Invite someone to see this event</span>
+                <span>ðŸ“§ Invite someone to see this event</span>
               </label>
               <div id="invitation-fields" class="invitation-fields" style="display: none;">
                 <input
@@ -409,7 +410,7 @@ function showApp() {
                   <option value="collaborate">Can collaborate</option>
                 </select>
                 <p class="invitation-hint">
-                  💡 They'll receive an email invitation to sign up and view your timeline.
+                  ðŸ’¡ They'll receive an email invitation to sign up and view your timeline.
                   Perfect for sharing memories with family and friends!
                 </p>
               </div>
@@ -427,7 +428,7 @@ function showApp() {
         <div class="modal-overlay"></div>
         <div class="modal-content">
           <div class="modal-header">
-            <h3>🤖 AI Event Suggestions</h3>
+            <h3>ðŸ¤– AI Event Suggestions</h3>
             <button id="ai-modal-close" class="modal-close">&times;</button>
           </div>
           <div class="ai-suggestions-content">
@@ -460,7 +461,7 @@ function showApp() {
             </div>
 
             <div class="modal-actions">
-              <button type="button" id="accept-suggestions-btn" class="btn btn-primary" style="display: none;">✓ Accept & Fill Form</button>
+              <button type="button" id="accept-suggestions-btn" class="btn btn-primary" style="display: none;">âœ“ Accept & Fill Form</button>
               <button type="button" id="reject-suggestions-btn" class="btn btn-secondary">Cancel</button>
             </div>
           </div>
@@ -627,7 +628,7 @@ function renderTimeline(): string {
               ${event.title}
               ${eventConnections.has(event.id) && eventConnections.get(event.id)!.length > 0
                 ? `<span class="connection-badge" title="Connected to ${eventConnections.get(event.id)!.length} event(s)">
-                    🔗 ${eventConnections.get(event.id)!.length}
+                    ðŸ”— ${eventConnections.get(event.id)!.length}
                   </span>`
                 : ''
               }
@@ -648,8 +649,8 @@ function renderTimeline(): string {
               : ''
             }
             <div class="event-actions">
-              <button class="btn-icon edit-btn" data-id="${event.id}" title="Edit">✏️</button>
-              <button class="btn-icon delete-btn" data-id="${event.id}" title="Delete">🗑️</button>
+              <button class="btn-icon edit-btn" data-id="${event.id}" title="Edit">âœï¸</button>
+              <button class="btn-icon delete-btn" data-id="${event.id}" title="Delete">ðŸ—‘ï¸</button>
             </div>
           </div>
         </div>
@@ -675,7 +676,7 @@ function startRecording() {
     isRecording = true;
     recognition.start();
     updateRecordingUI(true);
-    showToast('🎤 Recording started...', 'info');
+    showToast('ðŸŽ¤ Recording started...', 'info');
   } catch (error) {
     console.error('Failed to start recording:', error);
     showToast('Failed to start recording', 'error');
@@ -704,7 +705,7 @@ function updateRecordingUI(recording: boolean) {
   const indicator = document.getElementById('recording-indicator');
 
   if (btn) {
-    btn.textContent = recording ? '⏹️ Stop Recording' : '🎤 Record Story';
+    btn.textContent = recording ? 'â¹ï¸ Stop Recording' : 'ðŸŽ¤ Record Story';
     btn.classList.toggle('recording', recording);
   }
 
@@ -821,7 +822,7 @@ function acceptAISuggestions() {
     renderTags();
   }
 
-  showToast('✓ Form filled with AI suggestions', 'success');
+  showToast('âœ“ Form filled with AI suggestions', 'success');
 }
 
 // Show event modal (for create or edit)
@@ -1111,7 +1112,7 @@ async function handleAISuggestConnections() {
   const suggestBtn = document.getElementById('ai-suggest-connections-btn') as HTMLButtonElement;
   if (suggestBtn) {
     suggestBtn.disabled = true;
-    suggestBtn.textContent = '🤖 Analyzing...';
+    suggestBtn.textContent = 'ðŸ¤– Analyzing...';
   }
 
   try {
@@ -1157,7 +1158,7 @@ async function handleAISuggestConnections() {
     });
 
     renderConnections();
-    showToast(`✨ Added ${highConfidenceLinks.length} AI-suggested connection(s)!`, 'success');
+    showToast(`âœ¨ Added ${highConfidenceLinks.length} AI-suggested connection(s)!`, 'success');
 
   } catch (error) {
     console.error('AI connection error:', error);
@@ -1165,7 +1166,7 @@ async function handleAISuggestConnections() {
   } finally {
     if (suggestBtn) {
       suggestBtn.disabled = false;
-      suggestBtn.textContent = '🤖 Suggest Links';
+      suggestBtn.textContent = 'ðŸ¤– Suggest Links';
     }
   }
 }
@@ -1228,7 +1229,7 @@ function renderConnections() {
       if (!event) return '';
       return `
         <div class="connection-item">
-          <span>🔗 ${event.title} (${new Date(event.date).toLocaleDateString()})</span>
+          <span>ðŸ”— ${event.title} (${new Date(event.date).toLocaleDateString()})</span>
           <button type="button" class="remove-connection" data-id="${connId}">&times;</button>
         </div>
       `;
@@ -1306,7 +1307,7 @@ function toggleTheme() {
 
   const icon = document.getElementById('theme-toggle');
   if (icon) {
-    icon.textContent = isDark ? '☀️' : '🌙';
+    icon.textContent = isDark ? 'â˜€ï¸' : 'ðŸŒ™';
   }
 }
 
@@ -1317,7 +1318,7 @@ function initTheme() {
     document.body.classList.add('dark-mode');
     const icon = document.getElementById('theme-toggle');
     if (icon) {
-      icon.textContent = '☀️';
+      icon.textContent = 'â˜€ï¸';
     }
   }
 }
@@ -1404,12 +1405,12 @@ async function handleGooglePhotosImport() {
       return;
     }
 
-    showToast('🔐 Requesting Google Photos authorization...', 'info');
+    showToast('ðŸ” Requesting Google Photos authorization...', 'info');
 
     // Authorize with Google
     await googlePhotosService.authorize();
 
-    showToast('📥 Importing photos... This may take a minute.', 'info');
+    showToast('ðŸ“¥ Importing photos... This may take a minute.', 'info');
 
     // Import photos
     const result = await googlePhotosService.importPhotos(
@@ -1422,7 +1423,7 @@ async function handleGooglePhotosImport() {
 
     if (result.success) {
       showToast(
-        `✅ Successfully imported ${result.imported} photos!${result.failed > 0 ? ` (${result.failed} failed)` : ''}`,
+        `âœ… Successfully imported ${result.imported} photos!${result.failed > 0 ? ` (${result.failed} failed)` : ''}`,
         'success'
       );
 
@@ -1430,12 +1431,12 @@ async function handleGooglePhotosImport() {
       await loadUserData();
       showApp();
     } else {
-      showToast(`❌ Import failed: ${result.error}`, 'error');
+      showToast(`âŒ Import failed: ${result.error}`, 'error');
     }
 
   } catch (error) {
     console.error('Google Photos import error:', error);
-    showToast(`❌ Import failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
+    showToast(`âŒ Import failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
   }
 }
 
@@ -1469,7 +1470,7 @@ async function handleEnhanceEvent() {
   const enhanceBtn = document.getElementById('enhance-btn') as HTMLButtonElement;
   if (enhanceBtn) {
     enhanceBtn.disabled = true;
-    enhanceBtn.textContent = '✨ Enhancing...';
+    enhanceBtn.textContent = 'âœ¨ Enhancing...';
   }
 
   try {
@@ -1496,7 +1497,7 @@ async function handleEnhanceEvent() {
       renderTags();
     }
 
-    showToast('✨ Event enhanced with AI!', 'success');
+    showToast('âœ¨ Event enhanced with AI!', 'success');
 
   } catch (error) {
     console.error('Enhancement error:', error);
@@ -1504,7 +1505,7 @@ async function handleEnhanceEvent() {
   } finally {
     if (enhanceBtn) {
       enhanceBtn.disabled = false;
-      enhanceBtn.textContent = '✨ Enhance with AI';
+      enhanceBtn.textContent = 'âœ¨ Enhance with AI';
     }
   }
 }
@@ -1609,7 +1610,7 @@ async function handleEventSubmit(e: SubmitEvent) {
         sendInvitation(inviteEmail, inviteType, data.title);
       }
 
-      showToast('Event created successfully! ✅', 'success');
+      showToast('Event created successfully! âœ…', 'success');
       hideEventModal();
       refreshTimeline();
       initTheme();
@@ -1621,7 +1622,7 @@ async function handleEventSubmit(e: SubmitEvent) {
 async function sendInvitation(email: string, type: 'view' | 'collaborate', eventTitle: string) {
   if (!currentUser || !currentTimeline) return;
 
-  showToast('📧 Sending invitation...', 'info');
+  showToast('ðŸ“§ Sending invitation...', 'info');
 
   const result = await invitationService.sendInvitation({
     email,
@@ -1632,9 +1633,9 @@ async function sendInvitation(email: string, type: 'view' | 'collaborate', event
   });
 
   if (result.success) {
-    showToast(`✅ Invitation sent to ${email}`, 'success');
+    showToast(`âœ… Invitation sent to ${email}`, 'success');
   } else {
-    showToast(`❌ Failed to send invitation: ${result.error}`, 'error');
+    showToast(`âŒ Failed to send invitation: ${result.error}`, 'error');
   }
 }
 
@@ -1893,7 +1894,7 @@ function refreshTimeline() {
 }
 
 // Show toast notification
-function showToast(message: string, type: 'success' | 'error' | 'info' = 'info') {
+function showToast(message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info') {
   const toast = document.createElement('div');
   toast.className = `toast toast-${type}`;
   toast.textContent = message;
@@ -2133,7 +2134,7 @@ function showKeyboardShortcuts() {
       <div class="modal-overlay"></div>
       <div class="modal-content shortcuts-modal-content">
         <div class="modal-header">
-          <h3>⌨️ Keyboard Shortcuts</h3>
+          <h3>âŒ¨ï¸ Keyboard Shortcuts</h3>
           <button id="shortcuts-modal-close" class="modal-close">&times;</button>
         </div>
         <div class="shortcuts-grid">
@@ -2185,7 +2186,7 @@ function showKeyboardShortcuts() {
             </div>
           </div>
         </div>
-        <p class="shortcuts-note">💡 On Mac, use <kbd>Cmd</kbd> instead of <kbd>Ctrl</kbd></p>
+        <p class="shortcuts-note">ðŸ’¡ On Mac, use <kbd>Cmd</kbd> instead of <kbd>Ctrl</kbd></p>
       </div>
     </div>
   `;
@@ -2220,7 +2221,7 @@ async function showShareTimelineModal() {
       <div class="modal-overlay"></div>
       <div class="modal-content">
         <div class="modal-header">
-          <h3>👥 Share "${currentTimeline.name}"</h3>
+          <h3>ðŸ‘¥ Share "${currentTimeline.name}"</h3>
           <button id="share-modal-close" class="modal-close">&times;</button>
         </div>
 
@@ -2252,7 +2253,7 @@ async function showShareTimelineModal() {
                       <option value="admin" ${share.permission_level === 'admin' ? 'selected' : ''}>Admin</option>
                     </select>
                   </div>
-                  <button class="btn-icon remove-share" data-share-id="${share.id}" title="Remove access">🗑️</button>
+                  <button class="btn-icon remove-share" data-share-id="${share.id}" title="Remove access">ðŸ—‘ï¸</button>
                 </div>
               `).join('')
               : '<p class="empty-text">Not shared with anyone yet</p>'
@@ -2341,7 +2342,7 @@ async function showAISummaryModal() {
       <div class="modal-overlay"></div>
       <div class="modal-content" style="max-width: 700px;">
         <div class="modal-header">
-          <h3>🤖 AI Timeline Summary</h3>
+          <h3>ðŸ¤– AI Timeline Summary</h3>
           <button id="ai-summary-close" class="modal-close">&times;</button>
         </div>
 
@@ -2353,12 +2354,12 @@ async function showAISummaryModal() {
 
           <div id="summary-content" style="display: none;">
             <div class="summary-section">
-              <h4>📖 Narrative Summary</h4>
+              <h4>ðŸ“– Narrative Summary</h4>
               <p id="summary-text" style="line-height: 1.6; color: #444;"></p>
             </div>
 
             <div class="summary-section" style="margin-top: 24px;">
-              <h4>💡 Key Insights</h4>
+              <h4>ðŸ’¡ Key Insights</h4>
               <ul id="insights-list" style="line-height: 1.8;"></ul>
             </div>
           </div>
@@ -2447,7 +2448,7 @@ async function showDocumentImportModal() {
       <div class="modal-overlay"></div>
       <div class="modal-content" style="max-width: 800px;">
         <div class="modal-header">
-          <h3>📝 Import Journal/Documents</h3>
+          <h3>ðŸ“ Import Journal/Documents</h3>
           <button id="doc-import-close" class="modal-close">&times;</button>
         </div>
 
@@ -2468,7 +2469,7 @@ async function showDocumentImportModal() {
               border-bottom: 3px solid #6c5b7b;
               color: #6c5b7b;
             ">
-              📤 Upload Files
+              ðŸ“¤ Upload Files
             </button>
             <button id="tab-drive" class="import-tab" style="
               flex: 1;
@@ -2480,7 +2481,7 @@ async function showDocumentImportModal() {
               border-bottom: 3px solid transparent;
               color: #666;
             ">
-              📁 Google Drive
+              ðŸ“ Google Drive
             </button>
           </div>
 
@@ -2495,7 +2496,7 @@ async function showDocumentImportModal() {
             transition: all 0.3s;
             background: #f9f9f9;
           ">
-            <div style="font-size: 48px; margin-bottom: 12px;">📄</div>
+            <div style="font-size: 48px; margin-bottom: 12px;">ðŸ“„</div>
             <p style="font-size: 16px; font-weight: 500; margin-bottom: 8px;">
               Drop files here or click to browse
             </p>
@@ -2520,7 +2521,7 @@ async function showDocumentImportModal() {
           <!-- Google Drive panel -->
           <div id="drive-panel" style="display: none;">
             <div id="drive-auth-section" style="text-align: center; padding: 40px;">
-              <div style="font-size: 48px; margin-bottom: 12px;">📁</div>
+              <div style="font-size: 48px; margin-bottom: 12px;">ðŸ“</div>
               <h4 style="margin-bottom: 16px;">Connect to Google Drive</h4>
               <p style="color: #666; margin-bottom: 24px;">
                 Access your documents from Google Drive and import them to your timeline.
@@ -2573,7 +2574,7 @@ async function showDocumentImportModal() {
           </div>
 
           <div id="events-preview" style="display: none; margin-top: 20px;">
-            <h4 style="margin-bottom: 12px;">📋 Extracted Events Preview:</h4>
+            <h4 style="margin-bottom: 12px;">ðŸ“‹ Extracted Events Preview:</h4>
             <div id="preview-container" style="
               max-height: 400px;
               overflow-y: auto;
@@ -2589,7 +2590,7 @@ async function showDocumentImportModal() {
 
         <div class="modal-actions">
           <button id="import-events-btn" class="btn btn-primary" style="display: none;">
-            ✓ Import All Events
+            âœ“ Import All Events
           </button>
           <button id="cancel-import-btn" class="btn btn-secondary">Cancel</button>
         </div>
@@ -2813,7 +2814,7 @@ async function showDocumentImportModal() {
             ">${event.confidence}% confidence</span>
           </div>
           <div style="color: #666; font-size: 14px; margin-bottom: 8px;">
-            📅 ${event.date === 'unknown' ? 'Date unknown' : event.date}
+            ðŸ“… ${event.date === 'unknown' ? 'Date unknown' : event.date}
           </div>
           <div style="font-size: 14px; line-height: 1.5; margin-bottom: 8px;">
             ${event.description}
@@ -2863,10 +2864,9 @@ async function showDocumentImportModal() {
         try {
           await createEvent({
             title: event.title,
-            date: event.date === 'unknown' ? new Date().toISOString().split('T')[0] : event.date,
+            dateISO: event.date === 'unknown' ? new Date().toISOString().split('T')[0] : event.date,
             description: event.description,
             tags: event.tags || [],
-            photos: []
           });
           imported++;
         } catch (error) {
@@ -2884,14 +2884,14 @@ async function showDocumentImportModal() {
       }
 
       // Reload events
-      await loadEvents();
+      await loadUserData();
 
     } catch (error: any) {
       console.error('Import error:', error);
       showToast('Failed to import events: ' + error.message, 'error');
 
       if (importBtn) {
-        importBtn.textContent = '✓ Import All Events';
+        importBtn.textContent = 'âœ“ Import All Events';
         (importBtn as HTMLButtonElement).disabled = false;
       }
     }
@@ -2954,7 +2954,7 @@ async function showDocumentImportModal() {
               <div style="flex: 1;">
                 <div style="font-weight: 500; margin-bottom: 4px;">${file.name}</div>
                 <div style="font-size: 13px; color: #888;">
-                  ${file.size ? (parseInt(file.size) / 1024).toFixed(1) + ' KB' : 'N/A'} •
+                  ${file.size ? (parseInt(file.size) / 1024).toFixed(1) + ' KB' : 'N/A'} â€¢
                   ${new Date(file.modifiedTime).toLocaleDateString()}
                 </div>
               </div>
@@ -3142,3 +3142,5 @@ async function handleInviteUser(e: Event) {
 
 // Start app
 init();
+
+

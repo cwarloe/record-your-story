@@ -146,7 +146,7 @@ class DocumentImportService {
 
       // Example parsing logic - adjust based on actual format
       if (Array.isArray(chats)) {
-        chats.forEach((chat: any) => {
+        chats.forEach((_chat: any) => {
           // Extract life events mentioned in conversations
           // This would need Claude AI to analyze the chat content
         });

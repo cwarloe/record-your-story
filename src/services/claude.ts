@@ -255,6 +255,34 @@ Respond in JSON with confidence scores (0-100):
     }
   }
 
+  // Generic chat method for custom prompts
+  async chat(options: {
+    messages: Array<{ role: 'user' | 'assistant'; content: string }>;
+    maxTokens?: number;
+    temperature?: number;
+  }): Promise<{ content: Array<{ type: string; text: string }> }> {
+    if (!this.enabled || !this.client) {
+      throw new Error('Claude AI not enabled');
+    }
+
+    try {
+      const response = await this.client.messages.create({
+        model: 'claude-3-5-sonnet-20241022',
+        max_tokens: options.maxTokens || 1024,
+        temperature: options.temperature || 0.7,
+        messages: options.messages.map(msg => ({
+          role: msg.role,
+          content: msg.content
+        }))
+      });
+
+      return { content: response.content as Array<{ type: string; text: string }> };
+    } catch (error: any) {
+      console.error('Claude chat error:', error);
+      throw error;
+    }
+  }
+
   // Extract life events from document/journal
   async extractEventsFromDocument(
     documentText: string,
