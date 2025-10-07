@@ -26,7 +26,9 @@ class GoogleDriveService {
   constructor() {
     // Get OAuth credentials from environment
     this.clientId = import.meta.env.VITE_GOOGLE_DRIVE_CLIENT_ID || '';
-    this.redirectUri = `${window.location.origin}/google-callback`;
+    // Use .html extension for localhost to match OAuth configuration
+    const isLocalhost = window.location.hostname === 'localhost';
+    this.redirectUri = `${window.location.origin}/google-callback${isLocalhost ? '.html' : ''}`;
   }
 
   isEnabled(): boolean {
