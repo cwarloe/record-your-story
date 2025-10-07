@@ -26,7 +26,7 @@ class GoogleDriveService {
   constructor() {
     // Get OAuth credentials from environment
     this.clientId = import.meta.env.VITE_GOOGLE_DRIVE_CLIENT_ID || '';
-    this.redirectUri = `${window.location.origin}/google-callback.html`;
+    this.redirectUri = `${window.location.origin}/google-callback`;
   }
 
   isEnabled(): boolean {
