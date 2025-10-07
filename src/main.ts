@@ -4,6 +4,7 @@ import { invitationService } from '@/services/invitations';
 import { googlePhotosService } from '@/services/google-photos';
 import { documentImportService } from '@/services/document-import';
 import { googleDrive } from '@/services/google-drive';
+import { deduplicationService } from '@/services/deduplication';
 import type { User, Timeline, TimelineEvent } from '@/types';
 import Quill from 'quill';
 import 'quill/dist/quill.snow.css';
@@ -2733,26 +2734,50 @@ async function showDocumentImportModal() {
             progressText.textContent = `Analyzing ${current}/${total} documents...`;
           }
           if (progressBar) {
-            progressBar.style.width = `${(current / total) * 100}%`;
+            progressBar.style.width = `${(current / total) * 70}%`;
+          }
+        }
+      );
+
+      if (!result.success || result.allEvents.length === 0) {
+        if (progressSection) progressSection.style.display = 'none';
+        showToast(result.errors[0] || 'No events found in documents', 'error');
+        return;
+      }
+
+      // Check for duplicates
+      if (progressText) progressText.textContent = 'Checking for duplicates...';
+      if (progressBar) progressBar.style.width = '75%';
+
+      const dedupResult = await deduplicationService.deduplicateEvents(
+        result.allEvents,
+        events,
+        (current, total) => {
+          if (progressText) {
+            progressText.textContent = `Checking duplicates ${current}/${total}...`;
+          }
+          if (progressBar) {
+            progressBar.style.width = `${75 + (current / total) * 25}%`;
           }
         }
       );
 
       if (progressSection) progressSection.style.display = 'none';
 
-      if (!result.success || result.allEvents.length === 0) {
-        showToast(result.errors[0] || 'No events found in documents', 'error');
-        return;
-      }
-
-      // Show preview
-      extractedEvents = result.allEvents;
+      // Show preview with dedup info
+      extractedEvents = dedupResult.unique;
       showEventsPreview(extractedEvents);
 
-      if (result.errors.length > 0) {
+      // Show deduplication results
+      if (dedupResult.duplicates.length > 0) {
+        showToast(
+          `Found ${result.allEvents.length} events, removed ${dedupResult.duplicates.length} duplicates`,
+          'info'
+        );
+      } else if (result.errors.length > 0) {
         showToast(`Processed ${result.processed} files, ${result.failed} failed`, 'warning');
       } else {
-        showToast(`Found ${extractedEvents.length} events in ${result.processed} documents`, 'success');
+        showToast(`Found ${extractedEvents.length} unique events in ${result.processed} documents`, 'success');
       }
 
     } catch (error: any) {
@@ -3006,26 +3031,50 @@ async function showDocumentImportModal() {
             progressText.textContent = `Analyzing ${current}/${total} documents...`;
           }
           if (progressBar) {
-            progressBar.style.width = `${50 + (current / total) * 50}%`;
+            progressBar.style.width = `${50 + (current / total) * 35}%`;
+          }
+        }
+      );
+
+      if (!result.success || result.allEvents.length === 0) {
+        if (progressSection) progressSection.style.display = 'none';
+        showToast(result.errors[0] || 'No events found in documents', 'error');
+        return;
+      }
+
+      // Check for duplicates
+      if (progressText) progressText.textContent = 'Checking for duplicates...';
+      if (progressBar) progressBar.style.width = '87%';
+
+      const dedupResult = await deduplicationService.deduplicateEvents(
+        result.allEvents,
+        events,
+        (current, total) => {
+          if (progressText) {
+            progressText.textContent = `Checking duplicates ${current}/${total}...`;
+          }
+          if (progressBar) {
+            progressBar.style.width = `${87 + (current / total) * 13}%`;
           }
         }
       );
 
       if (progressSection) progressSection.style.display = 'none';
 
-      if (!result.success || result.allEvents.length === 0) {
-        showToast(result.errors[0] || 'No events found in documents', 'error');
-        return;
-      }
-
-      // Show preview
-      extractedEvents = result.allEvents;
+      // Show preview with dedup info
+      extractedEvents = dedupResult.unique;
       showEventsPreview(extractedEvents);
 
-      if (result.errors.length > 0) {
+      // Show deduplication results
+      if (dedupResult.duplicates.length > 0) {
+        showToast(
+          `Found ${result.allEvents.length} events, removed ${dedupResult.duplicates.length} duplicates`,
+          'info'
+        );
+      } else if (result.errors.length > 0) {
         showToast(`Processed ${result.processed} files, ${result.failed} failed`, 'warning');
       } else {
-        showToast(`Found ${extractedEvents.length} events in ${result.processed} documents`, 'success');
+        showToast(`Found ${extractedEvents.length} unique events in ${result.processed} documents`, 'success');
       }
 
     } catch (error: any) {
