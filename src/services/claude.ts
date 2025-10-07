@@ -254,6 +254,93 @@ Respond in JSON with confidence scores (0-100):
       return { error: error.message };
     }
   }
+
+  // Extract life events from document/journal
+  async extractEventsFromDocument(
+    documentText: string,
+    filename: string
+  ): Promise<{
+    events?: Array<{
+      title: string;
+      date: string;
+      description: string;
+      tags: string[];
+      confidence: number;
+      sourceText: string;
+    }>;
+    summary?: string;
+    error?: string;
+  }> {
+    if (!this.enabled || !this.client) {
+      return { error: 'Claude AI not enabled' };
+    }
+
+    try {
+      // Limit document size to avoid token limits
+      const maxLength = 15000; // ~15k chars
+      const truncatedText = documentText.length > maxLength
+        ? documentText.substring(0, maxLength) + '\n...[truncated]'
+        : documentText;
+
+      const response = await this.client.messages.create({
+        model: 'claude-3-5-sonnet-20241022',
+        max_tokens: 2048,
+        messages: [{
+          role: 'user',
+          content: `Analyze this document and extract life events, journal entries, or significant moments.
+
+DOCUMENT: ${filename}
+
+CONTENT:
+${truncatedText}
+
+Extract each distinct life event, journal entry, or significant moment. For each event:
+1. Create a clear, descriptive title
+2. Extract or infer the date (YYYY-MM-DD format, or "unknown")
+3. Preserve the authentic voice and emotional tone in the description
+4. Identify relevant tags (people, places, emotions, themes)
+5. Assign confidence score (0-100) based on how clearly this is a life event
+6. Include the original text snippet
+
+IMPORTANT:
+- Preserve emotional language - don't sanitize or make bland
+- Keep personal voice authentic
+- Multiple entries in one document should be split out
+- Look for date markers ("March 2015", "last summer", "today", etc.)
+- Each paragraph/section might be a separate event
+
+Respond in JSON:
+{
+  "events": [
+    {
+      "title": "Event title",
+      "date": "YYYY-MM-DD or unknown",
+      "description": "Full description preserving original voice",
+      "tags": ["tag1", "tag2"],
+      "confidence": 85,
+      "sourceText": "Original text snippet..."
+    }
+  ],
+  "summary": "Brief overview of what this document contains"
+}`
+        }]
+      });
+
+      const content = response.content[0];
+      if (content.type === 'text') {
+        const text = content.text;
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          return JSON.parse(jsonMatch[0]);
+        }
+      }
+
+      return { error: 'Failed to parse response' };
+    } catch (error: any) {
+      console.error('Claude API error:', error);
+      return { error: error.message };
+    }
+  }
 }
 
 export const claude = new ClaudeService();

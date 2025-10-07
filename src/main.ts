@@ -2,6 +2,7 @@ import { supabase } from '@/services/supabase';
 import { claude } from '@/services/claude';
 import { invitationService } from '@/services/invitations';
 import { googlePhotosService } from '@/services/google-photos';
+import { documentImportService } from '@/services/document-import';
 import type { User, Timeline, TimelineEvent } from '@/types';
 import Quill from 'quill';
 import 'quill/dist/quill.snow.css';
@@ -321,6 +322,7 @@ function showApp() {
           <h2>${currentTimeline?.name || 'My Story'}</h2>
           <div class="timeline-actions">
             ${claude.isEnabled() ? '<button id="ai-summarize-btn" class="btn btn-secondary btn-small" title="AI Timeline Summary">🤖 Summarize</button>' : ''}
+            ${claude.isEnabled() ? '<button id="import-journal-btn" class="btn btn-secondary btn-small" title="Import Journal/Documents">📝 Import Journal</button>' : ''}
             <button id="import-google-photos-btn" class="btn btn-secondary btn-small" title="Import from Google Photos">📷 Import Photos</button>
             <button id="share-timeline-btn" class="btn btn-secondary btn-small" title="Share Timeline">👥 Share</button>
             <button id="add-event-btn" class="btn btn-primary">+ Add Event</button>
@@ -469,6 +471,7 @@ function showApp() {
     document.getElementById('signout-btn')?.addEventListener('click', handleSignOut);
     document.getElementById('add-event-btn')?.addEventListener('click', () => showEventModal());
     document.getElementById('import-google-photos-btn')?.addEventListener('click', handleGooglePhotosImport);
+    document.getElementById('import-journal-btn')?.addEventListener('click', showDocumentImportModal);
     document.getElementById('ai-summarize-btn')?.addEventListener('click', showAISummaryModal);
     document.getElementById('theme-toggle')?.addEventListener('click', toggleTheme);
 
@@ -2417,6 +2420,357 @@ async function showAISummaryModal() {
 
 function hideAISummaryModal() {
   const modal = document.getElementById('ai-summary-modal');
+  if (modal) {
+    modal.remove();
+  }
+}
+
+// Document Import Modal
+async function showDocumentImportModal() {
+  if (!currentTimeline) {
+    showToast('Please select a timeline first', 'error');
+    return;
+  }
+
+  if (!claude.isEnabled()) {
+    showToast('Claude AI not enabled. Add VITE_ANTHROPIC_API_KEY to enable document import.', 'error');
+    return;
+  }
+
+  const app = document.getElementById('app');
+  if (!app) return;
+
+  const modalHtml = `
+    <div id="document-import-modal" class="modal">
+      <div class="modal-overlay"></div>
+      <div class="modal-content" style="max-width: 800px;">
+        <div class="modal-header">
+          <h3>📝 Import Journal/Documents</h3>
+          <button id="doc-import-close" class="modal-close">&times;</button>
+        </div>
+
+        <div style="padding: 20px;">
+          <p style="color: #666; margin-bottom: 20px;">
+            Upload text files, journal entries, or documents. AI will analyze them and extract life events for your timeline.
+          </p>
+
+          <div id="upload-zone" style="
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #f9f9f9;
+          ">
+            <div style="font-size: 48px; margin-bottom: 12px;">📄</div>
+            <p style="font-size: 16px; font-weight: 500; margin-bottom: 8px;">
+              Drop files here or click to browse
+            </p>
+            <p style="font-size: 14px; color: #888;">
+              Supports: .txt, .docx, .pdf, .json
+            </p>
+            <input
+              type="file"
+              id="file-input"
+              multiple
+              accept=".txt,.docx,.pdf,.json"
+              style="display: none;"
+            />
+          </div>
+
+          <div id="file-list" style="margin-top: 20px; display: none;">
+            <h4 style="margin-bottom: 12px;">Selected Files:</h4>
+            <div id="files-container"></div>
+          </div>
+
+          <div id="analysis-progress" style="display: none; margin-top: 20px;">
+            <div style="text-align: center; padding: 20px;">
+              <div class="spinner" style="margin: 0 auto 16px;"></div>
+              <p id="progress-text">Analyzing documents...</p>
+              <div style="background: #e0e0e0; border-radius: 4px; height: 8px; margin-top: 12px; overflow: hidden;">
+                <div id="progress-bar" style="background: #4CAF50; height: 100%; width: 0%; transition: width 0.3s;"></div>
+              </div>
+            </div>
+          </div>
+
+          <div id="events-preview" style="display: none; margin-top: 20px;">
+            <h4 style="margin-bottom: 12px;">📋 Extracted Events Preview:</h4>
+            <div id="preview-container" style="
+              max-height: 400px;
+              overflow-y: auto;
+              border: 1px solid #ddd;
+              border-radius: 8px;
+              padding: 16px;
+            "></div>
+            <p style="margin-top: 12px; font-size: 14px; color: #666;">
+              Review the extracted events below. You can import them all or cancel.
+            </p>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button id="import-events-btn" class="btn btn-primary" style="display: none;">
+            ✓ Import All Events
+          </button>
+          <button id="cancel-import-btn" class="btn btn-secondary">Cancel</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  app.insertAdjacentHTML('beforeend', modalHtml);
+
+  // Get elements
+  const uploadZone = document.getElementById('upload-zone');
+  const fileInput = document.getElementById('file-input') as HTMLInputElement;
+  const fileList = document.getElementById('file-list');
+  const filesContainer = document.getElementById('files-container');
+
+  let selectedFiles: File[] = [];
+  let extractedEvents: any[] = [];
+
+  // Click to browse
+  uploadZone?.addEventListener('click', () => fileInput?.click());
+
+  // Drag and drop handlers
+  uploadZone?.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadZone.style.borderColor = '#4CAF50';
+    uploadZone.style.background = '#f0f8f0';
+  });
+
+  uploadZone?.addEventListener('dragleave', () => {
+    uploadZone.style.borderColor = '#ccc';
+    uploadZone.style.background = '#f9f9f9';
+  });
+
+  uploadZone?.addEventListener('drop', async (e) => {
+    e.preventDefault();
+    uploadZone.style.borderColor = '#ccc';
+    uploadZone.style.background = '#f9f9f9';
+
+    const files = Array.from(e.dataTransfer?.files || []);
+    handleFileSelection(files);
+  });
+
+  // File input change
+  fileInput?.addEventListener('change', () => {
+    const files = Array.from(fileInput.files || []);
+    handleFileSelection(files);
+  });
+
+  function handleFileSelection(files: File[]) {
+    selectedFiles = files;
+
+    if (files.length === 0) return;
+
+    // Show file list
+    if (fileList && filesContainer) {
+      fileList.style.display = 'block';
+      filesContainer.innerHTML = files.map((file, idx) => `
+        <div style="
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 8px 12px;
+          background: #f5f5f5;
+          border-radius: 4px;
+          margin-bottom: 8px;
+        ">
+          <div>
+            <strong>${file.name}</strong>
+            <span style="color: #888; margin-left: 12px; font-size: 14px;">
+              ${(file.size / 1024).toFixed(1)} KB
+            </span>
+          </div>
+          <button class="remove-file-btn" data-idx="${idx}" style="
+            background: none;
+            border: none;
+            color: #e74c3c;
+            cursor: pointer;
+            font-size: 20px;
+            padding: 0 8px;
+          ">&times;</button>
+        </div>
+      `).join('');
+
+      // Add remove handlers
+      document.querySelectorAll('.remove-file-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const idx = parseInt((e.target as HTMLElement).getAttribute('data-idx') || '0');
+          selectedFiles.splice(idx, 1);
+          handleFileSelection(selectedFiles);
+        });
+      });
+    }
+
+    // Auto-start analysis
+    analyzeDocuments();
+  }
+
+  async function analyzeDocuments() {
+    const progressSection = document.getElementById('analysis-progress');
+    const progressText = document.getElementById('progress-text');
+    const progressBar = document.getElementById('progress-bar');
+
+    if (progressSection) progressSection.style.display = 'block';
+
+    try {
+      const result = await documentImportService.processDocuments(
+        selectedFiles,
+        (current, total) => {
+          if (progressText) {
+            progressText.textContent = `Analyzing ${current}/${total} documents...`;
+          }
+          if (progressBar) {
+            progressBar.style.width = `${(current / total) * 100}%`;
+          }
+        }
+      );
+
+      if (progressSection) progressSection.style.display = 'none';
+
+      if (!result.success || result.allEvents.length === 0) {
+        showToast(result.errors[0] || 'No events found in documents', 'error');
+        return;
+      }
+
+      // Show preview
+      extractedEvents = result.allEvents;
+      showEventsPreview(extractedEvents);
+
+      if (result.errors.length > 0) {
+        showToast(`Processed ${result.processed} files, ${result.failed} failed`, 'warning');
+      } else {
+        showToast(`Found ${extractedEvents.length} events in ${result.processed} documents`, 'success');
+      }
+
+    } catch (error: any) {
+      console.error('Document analysis error:', error);
+      if (progressSection) progressSection.style.display = 'none';
+      showToast('Failed to analyze documents: ' + error.message, 'error');
+    }
+  }
+
+  function showEventsPreview(events: any[]) {
+    const previewSection = document.getElementById('events-preview');
+    const previewContainer = document.getElementById('preview-container');
+    const importBtn = document.getElementById('import-events-btn');
+
+    if (previewSection) previewSection.style.display = 'block';
+    if (importBtn) importBtn.style.display = 'inline-block';
+
+    if (previewContainer) {
+      previewContainer.innerHTML = events.map((event, idx) => `
+        <div style="
+          padding: 12px;
+          border-bottom: 1px solid #eee;
+          ${idx === events.length - 1 ? 'border-bottom: none;' : ''}
+        ">
+          <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+            <strong style="font-size: 16px;">${event.title}</strong>
+            <span style="
+              background: ${event.confidence > 80 ? '#4CAF50' : event.confidence > 50 ? '#FF9800' : '#999'};
+              color: white;
+              padding: 2px 8px;
+              border-radius: 4px;
+              font-size: 12px;
+            ">${event.confidence}% confidence</span>
+          </div>
+          <div style="color: #666; font-size: 14px; margin-bottom: 8px;">
+            📅 ${event.date === 'unknown' ? 'Date unknown' : event.date}
+          </div>
+          <div style="font-size: 14px; line-height: 1.5; margin-bottom: 8px;">
+            ${event.description}
+          </div>
+          ${event.tags && event.tags.length > 0 ? `
+            <div style="margin-top: 8px;">
+              ${event.tags.map((tag: string) => `
+                <span style="
+                  background: #e3f2fd;
+                  color: #1976d2;
+                  padding: 2px 8px;
+                  border-radius: 12px;
+                  font-size: 12px;
+                  margin-right: 6px;
+                ">${tag}</span>
+              `).join('')}
+            </div>
+          ` : ''}
+          <details style="margin-top: 8px; font-size: 13px; color: #888;">
+            <summary style="cursor: pointer;">Source text</summary>
+            <div style="margin-top: 8px; padding: 8px; background: #f9f9f9; border-radius: 4px; font-style: italic;">
+              "${event.sourceText}"
+            </div>
+          </details>
+        </div>
+      `).join('');
+    }
+  }
+
+  // Import events button
+  document.getElementById('import-events-btn')?.addEventListener('click', async () => {
+    await importEvents(extractedEvents);
+  });
+
+  async function importEvents(events: any[]) {
+    const importBtn = document.getElementById('import-events-btn');
+    if (importBtn) {
+      importBtn.textContent = 'Importing...';
+      (importBtn as HTMLButtonElement).disabled = true;
+    }
+
+    try {
+      let imported = 0;
+      let failed = 0;
+
+      for (const event of events) {
+        try {
+          await createEvent({
+            title: event.title,
+            date: event.date === 'unknown' ? new Date().toISOString().split('T')[0] : event.date,
+            description: event.description,
+            tags: event.tags || [],
+            photos: []
+          });
+          imported++;
+        } catch (error) {
+          console.error('Failed to import event:', event.title, error);
+          failed++;
+        }
+      }
+
+      hideDocumentImportModal();
+
+      if (failed === 0) {
+        showToast(`Successfully imported ${imported} events!`, 'success');
+      } else {
+        showToast(`Imported ${imported} events, ${failed} failed`, 'warning');
+      }
+
+      // Reload events
+      await loadEvents();
+
+    } catch (error: any) {
+      console.error('Import error:', error);
+      showToast('Failed to import events: ' + error.message, 'error');
+
+      if (importBtn) {
+        importBtn.textContent = '✓ Import All Events';
+        (importBtn as HTMLButtonElement).disabled = false;
+      }
+    }
+  }
+
+  // Close handlers
+  document.getElementById('doc-import-close')?.addEventListener('click', hideDocumentImportModal);
+  document.getElementById('cancel-import-btn')?.addEventListener('click', hideDocumentImportModal);
+  document.querySelector('#document-import-modal .modal-overlay')?.addEventListener('click', hideDocumentImportModal);
+}
+
+function hideDocumentImportModal() {
+  const modal = document.getElementById('document-import-modal');
   if (modal) {
     modal.remove();
   }
