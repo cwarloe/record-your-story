@@ -2,6 +2,65 @@
 
 All notable changes to Record Your Story will be documented in this file.
 
+## [2.7.1] - 2025-10-06
+
+### 📁 Google Drive Integration
+
+**New Feature:** Import documents directly from Google Drive with OAuth 2.0 authentication.
+
+### ✨ What's New
+
+#### Google Drive OAuth
+- **Secure Authentication**: OAuth 2.0 popup-based flow
+- **Browse Drive Files**: View and select documents from your Google Drive
+- **Multi-Format Support**: Google Docs, .txt, .docx, .pdf files
+- **Auto-Export**: Google Docs automatically exported to plain text
+- **Token Management**: Secure token storage with automatic expiration
+
+#### Enhanced Import UI
+- **Tab-Based Interface**: Switch between "Upload Files" and "Google Drive"
+- **File Selection**: Checkboxes for selecting multiple Drive files
+- **Batch Import**: Import multiple documents with one click
+- **Progress Tracking**: Real-time progress for download and analysis
+- **Connection Management**: Easy connect/disconnect from Drive
+
+#### User Experience
+1. Click "📝 Import Journal" button
+2. Switch to "📁 Google Drive" tab
+3. Click "Connect Google Drive"
+4. Authorize in popup window
+5. Select documents with checkboxes
+6. Click "Import Selected Files"
+7. AI analyzes and extracts events
+
+### 🛠️ Technical Details
+
+**New Files:**
+- `src/services/google-drive.ts` - Complete Google Drive service
+  - OAuth 2.0 authentication with popup
+  - File listing with MIME type filters
+  - Document download and export
+  - Access token caching in LocalStorage
+
+**Updated Files:**
+- `src/main.ts` - Tab-based import UI
+  - Drive authentication flow
+  - File browser with checkboxes
+  - Batch import functionality
+- `google-callback.html` - Multi-service OAuth callback
+  - Supports both Google Photos and Drive
+  - Dynamic UI based on service
+
+**Configuration:**
+Set `VITE_GOOGLE_DRIVE_CLIENT_ID` environment variable to enable Google Drive integration.
+
+### 🎯 Integration Benefits
+
+- **Seamless Access**: No need to download files manually
+- **Always Up-to-Date**: Import latest versions from Drive
+- **Efficient**: Reuses existing AI document analysis
+- **Secure**: OAuth 2.0 standard authentication
+
 ## [2.7.0] - 2025-10-06
 
 ### 🤖 Document Import with AI Analysis

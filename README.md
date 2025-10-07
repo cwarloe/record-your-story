@@ -1,10 +1,10 @@
-# 🤖 Record Your Story v2.7
+# 🤖 Record Your Story v2.7.1
 ### Your memories, powered by AI
 
 > **A personal timeline application that uses Claude AI to transform how you capture and share life's moments.**
 
 [![Live Demo](https://img.shields.io/badge/🚀-Live%20Demo-7266FF)](https://record-your-story.onrender.com)
-[![Version](https://img.shields.io/badge/version-2.7.0-blue)](https://github.com/cwarloe/record-your-story/releases)
+[![Version](https://img.shields.io/badge/version-2.7.1-blue)](https://github.com/cwarloe/record-your-story/releases)
 [![License](https://img.shields.io/badge/license-ISC-green)](LICENSE)
 
 ---
@@ -15,12 +15,14 @@
 
 ### 📝 Document Import with AI Analysis (NEW!)
 Transform journals and text files into timeline events automatically
-- Upload .txt, .docx, .pdf, or .json files
-- AI extracts life events with dates and context
-- Drag & drop multiple files for batch processing
-- Preview events with confidence scores before importing
-- Preserves your authentic voice and emotions
-- Perfect for importing old diaries, notes, and journal exports
+- **Upload Files**: Drag & drop .txt, .docx, .pdf, or .json files
+- **Google Drive Integration**: Import directly from Drive with OAuth 2.0 🆕
+- **AI Event Extraction**: Automatically identifies and extracts life events
+- **Smart Date Detection**: Recognizes dates in various formats
+- **Batch Processing**: Import multiple documents at once
+- **Event Preview**: Review with confidence scores before importing
+- **Emotional Preservation**: Keeps your authentic voice
+- Perfect for importing old diaries, notes, Google Docs, and journal exports
 
 ### 🎤 Voice-to-Event (Live Now!)
 Just speak naturally - Claude AI creates the event for you
@@ -93,6 +95,7 @@ npm run build
 
 - **🤖 AI-Powered Imports** 🆕
   - **Document Analysis**: Upload journals/text files, AI extracts events
+  - **Google Drive**: Import directly from Drive with OAuth 2.0 🆕
   - **Voice-to-Event**: Speak your story, AI creates the event
   - **Smart Date Detection**: Recognizes "March 2015", "last summer", etc.
   - **Emotional Preservation**: Keeps your authentic voice
@@ -133,11 +136,13 @@ npm run build
 
 ### 🚧 Coming in v3.0
 
-- **Google Drive Integration** - Import directly from Google Docs
 - **Claude Chat History Import** - Extract events from conversations
+- **Enhanced Deduplication** - Smart detection of duplicate imports
+- **Advanced Date Parsing** - More natural language date formats
+- **Gmail Integration** - Import events from email
+- **Google Calendar Import** - Sync events from calendar
 - **Map View** - See your events on an interactive map
 - **Video/Audio Upload** - Rich media beyond photos
-- **Enhanced Deduplication** - Smart detection of duplicate imports
 - **SendGrid Email** - Send invitations to non-users
 
 ---
