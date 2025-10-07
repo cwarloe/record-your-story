@@ -1649,7 +1649,10 @@ kbd {
 .invite-input {
   padding: var(--space-2);
   border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
 
+@media (max-width: 768px) {
   .photo-preview {
     grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
   }
@@ -1665,3 +1668,5 @@ kbd {
   .share-item {
     flex-direction: column;
     gap: var(--space-2);
+  }
+}

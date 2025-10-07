@@ -95,18 +95,25 @@ const MAX_HISTORY = 50;
 
 // Initialize app
 async function init() {
-  // Check for invitation token in URL
+  // Check for invitation tokens in URL
   const urlParams = new URLSearchParams(window.location.search);
-  const inviteToken = urlParams.get('invite');
+  const eventInviteToken = urlParams.get('invite');
+  const timelineInviteToken = urlParams.get('timeline-invite');
 
   // Check for existing session
   const user = await supabase.getCurrentUser();
   currentUser = user as User | null;
 
   if (currentUser) {
-    // If user is logged in and has invitation token, accept it
-    if (inviteToken) {
-      await handleInvitationAcceptance(inviteToken);
+    // If user is logged in and has invitation tokens, accept them
+    if (eventInviteToken) {
+      await handleInvitationAcceptance(eventInviteToken);
+      // Clean URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    if (timelineInviteToken) {
+      await handleTimelineInvitationAcceptance(timelineInviteToken);
       // Clean URL
       window.history.replaceState({}, document.title, window.location.pathname);
     }
@@ -114,7 +121,7 @@ async function init() {
     await loadUserData();
     showApp();
   } else {
-    // If not logged in, show auth (invitation will be handled after login)
+    // If not logged in, show auth (invitations will be handled after login)
     showAuth();
   }
 
@@ -122,12 +129,19 @@ async function init() {
   supabase.onAuthStateChange(async (user) => {
     currentUser = user as User | null;
     if (user) {
-      // Check for invitation token after login
+      // Check for invitation tokens after login
       const urlParams = new URLSearchParams(window.location.search);
-      const inviteToken = urlParams.get('invite');
+      const eventInviteToken = urlParams.get('invite');
+      const timelineInviteToken = urlParams.get('timeline-invite');
 
-      if (inviteToken) {
-        await handleInvitationAcceptance(inviteToken);
+      if (eventInviteToken) {
+        await handleInvitationAcceptance(eventInviteToken);
+        // Clean URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+
+      if (timelineInviteToken) {
+        await handleTimelineInvitationAcceptance(timelineInviteToken);
         // Clean URL
         window.history.replaceState({}, document.title, window.location.pathname);
       }
@@ -151,6 +165,20 @@ async function handleInvitationAcceptance(token: string) {
     // The shared timeline will appear when we load user data
   } else {
     showToast(`âŒ ${result.error || 'Failed to accept invitation'}`, 'error');
+  }
+}
+
+// Handle timeline invitation acceptance
+async function handleTimelineInvitationAcceptance(token: string) {
+  showToast('Processing timeline invitation...', 'info');
+
+  const result = await supabase.acceptTimelineEmailInvitation(token);
+
+  if (result.data) {
+    showToast('âœ… Timeline invitation accepted! You now have access to the shared timeline.', 'success');
+    // The shared timeline will appear when we load user data
+  } else {
+    showToast(`âŒ ${result.error?.message || 'Failed to accept timeline invitation'}`, 'error');
   }
 }
 
@@ -230,6 +258,12 @@ async function loadUserData() {
       }
     } else {
       console.error('No currentTimeline set after loading!');
+    }
+
+    // Load pending timeline invitations
+    if (currentUser.email) {
+      const { data: pendingInvites } = await supabase.getPendingTimelineInvitations(currentUser.email);
+      (window as any).pendingTimelineInvitations = pendingInvites || [];
     }
   } catch (error) {
     console.error('Fatal error in loadUserData:', error);
@@ -314,6 +348,7 @@ function showApp() {
             <button id="undo-btn" class="btn btn-secondary btn-small" title="Undo (Ctrl+Z)" disabled style="opacity: 0.5;">â†¶ Undo</button>
             <button id="redo-btn" class="btn btn-secondary btn-small" title="Redo (Ctrl+Y)" disabled style="opacity: 0.5;">â†· Redo</button>
             <button id="export-pdf-btn" class="btn btn-secondary btn-small" title="Export to PDF">ðŸ“„ Export PDF</button>
+            ${((window as any).pendingTimelineInvitations || []).length > 0 ? `<button id="pending-invitations-btn" class="btn btn-primary btn-small" title="Pending Timeline Invitations">ðŸ“© ${((window as any).pendingTimelineInvitations || []).length}</button>` : ''}
             <button id="theme-toggle" class="theme-toggle">ðŸŒ™</button>
             <span class="user-email">${currentUser?.email || 'User'}</span>
             <button id="signout-btn" class="btn btn-small">Sign Out</button>
@@ -491,6 +526,9 @@ function showApp() {
 
     // Export listener
     document.getElementById('export-pdf-btn')?.addEventListener('click', exportToPDF);
+
+    // Pending invitations listener
+    document.getElementById('pending-invitations-btn')?.addEventListener('click', showPendingInvitationsModal);
 
     // Undo/Redo listeners
     document.getElementById('undo-btn')?.addEventListener('click', undo);
@@ -2423,6 +2461,124 @@ async function showAISummaryModal() {
 
 function hideAISummaryModal() {
   const modal = document.getElementById('ai-summary-modal');
+  if (modal) {
+    modal.remove();
+  }
+}
+
+// Pending Timeline Invitations Modal
+async function showPendingInvitationsModal() {
+  const pendingInvites = (window as any).pendingTimelineInvitations || [];
+
+  const app = document.getElementById('app');
+  if (!app) return;
+
+  const modalHtml = `
+    <div id="pending-invitations-modal" class="modal">
+      <div class="modal-overlay"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>ðŸ“© Pending Timeline Invitations</h3>
+          <button id="pending-invitations-close" class="modal-close">&times;</button>
+        </div>
+
+        <div style="padding: 20px;">
+          ${pendingInvites.length === 0
+            ? '<p style="text-align: center; color: #666;">No pending timeline invitations.</p>'
+            : pendingInvites.map((invite: any) => `
+                <div class="invitation-item" style="
+                  border: 1px solid #ddd;
+                  border-radius: 8px;
+                  padding: 16px;
+                  margin-bottom: 16px;
+                  background: #f9f9f9;
+                ">
+                  <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+                    <div>
+                      <h4 style="margin: 0 0 4px 0; color: #333;">"${invite.timeline.name}"</h4>
+                      <p style="margin: 0; color: #666; font-size: 14px;">
+                        Invited by ${invite.inviter.email} â€¢ ${invite.invitation_type === 'view' ? 'View access' : 'Collaborate access'}
+                      </p>
+                      <p style="margin: 4px 0 0 0; color: #888; font-size: 12px;">
+                        Expires: ${new Date(invite.expires_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                  <div style="display: flex; gap: 8px;">
+                    <button class="accept-invitation-btn btn btn-primary btn-small"
+                            data-invite-id="${invite.id}"
+                            data-token="${invite.invitation_token}">
+                      âœ“ Accept
+                    </button>
+                    <button class="decline-invitation-btn btn btn-secondary btn-small"
+                            data-invite-id="${invite.id}">
+                      âŒ Decline
+                    </button>
+                  </div>
+                </div>
+              `).join('')
+          }
+        </div>
+
+        <div class="modal-actions">
+          <button id="pending-invitations-done" class="btn btn-primary">Done</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  app.insertAdjacentHTML('beforeend', modalHtml);
+
+  // Event listeners
+  document.getElementById('pending-invitations-close')?.addEventListener('click', hidePendingInvitationsModal);
+  document.getElementById('pending-invitations-done')?.addEventListener('click', hidePendingInvitationsModal);
+  document.querySelector('#pending-invitations-modal .modal-overlay')?.addEventListener('click', hidePendingInvitationsModal);
+
+  // Accept/decline listeners
+  document.querySelectorAll('.accept-invitation-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const target = e.target as HTMLElement;
+      const token = target.getAttribute('data-token');
+      if (token) {
+        const result = await supabase.acceptTimelineEmailInvitation(token);
+        if (result.data) {
+          showToast('âœ… Timeline invitation accepted!', 'success');
+          // Remove from pending list
+          const inviteId = target.getAttribute('data-invite-id');
+          (window as any).pendingTimelineInvitations = (window as any).pendingTimelineInvitations.filter((inv: any) => inv.id !== inviteId);
+          // Refresh UI
+          hidePendingInvitationsModal();
+          showApp();
+        } else {
+          showToast(`âŒ ${result.error?.message || 'Failed to accept invitation'}`, 'error');
+        }
+      }
+    });
+  });
+
+  document.querySelectorAll('.decline-invitation-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const target = e.target as HTMLElement;
+      const inviteId = target.getAttribute('data-invite-id');
+      if (inviteId) {
+        const result = await supabase.declineTimelineEmailInvitation(inviteId);
+        if (!result.error) {
+          showToast('Invitation declined', 'info');
+          // Remove from pending list
+          (window as any).pendingTimelineInvitations = (window as any).pendingTimelineInvitations.filter((inv: any) => inv.id !== inviteId);
+          // Refresh UI
+          hidePendingInvitationsModal();
+          showApp();
+        } else {
+          showToast('Failed to decline invitation', 'error');
+        }
+      }
+    });
+  });
+}
+
+function hidePendingInvitationsModal() {
+  const modal = document.getElementById('pending-invitations-modal');
   if (modal) {
     modal.remove();
   }

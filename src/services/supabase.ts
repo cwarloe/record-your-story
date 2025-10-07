@@ -229,30 +229,89 @@ class SupabaseService {
   // Collaboration methods
   async inviteUserToTimeline(timeline_id: string, email: string, permission_level: 'view' | 'edit' | 'admin', invited_by: string) {
     // First, check if user exists with this email
-    const { data: users, error: userError } = await this.client
+    const { data: users } = await this.client
       .from('users')
       .select('id')
       .eq('email', email)
       .single();
 
-    if (userError || !users) {
-      return { data: null, error: { message: 'User not found with this email. They need to sign up first.' } };
+    if (users) {
+      // User exists - create direct share
+      const { data, error } = await this.client
+        .from('shared_timelines')
+        .insert([{
+          timeline_id,
+          user_id: users.id,
+          permission_level,
+          invited_by,
+          accepted: false
+        }])
+        .select()
+        .single();
+
+      return { data, error };
+    } else {
+      // User doesn't exist - send email invitation
+      return await this.sendTimelineInvitation(timeline_id, email, permission_level, invited_by);
     }
+  }
 
-    // Create invitation
-    const { data, error } = await this.client
-      .from('shared_timelines')
-      .insert([{
-        timeline_id,
-        user_id: users.id,
-        permission_level,
-        invited_by,
-        accepted: false
-      }])
-      .select()
-      .single();
+  async sendTimelineInvitation(timeline_id: string, email: string, permission_level: 'view' | 'edit' | 'admin', invited_by: string) {
+    try {
+      // Get timeline details for the email
+      const { data: timeline, error: timelineError } = await this.client
+        .from('timelines')
+        .select('name')
+        .eq('id', timeline_id)
+        .single();
 
-    return { data, error };
+      if (timelineError || !timeline) {
+        return { data: null, error: { message: 'Timeline not found' } };
+      }
+
+      // Get sender details
+      const { data: sender, error: senderError } = await this.client
+        .from('users')
+        .select('email')
+        .eq('id', invited_by)
+        .single();
+
+      if (senderError || !sender) {
+        return { data: null, error: { message: 'Sender not found' } };
+      }
+
+      // Get Supabase function URL
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const functionUrl = `${supabaseUrl}/functions/v1/send-timeline-invitation`;
+
+      // Call Supabase Edge Function
+      const response = await fetch(functionUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${(await this.client.auth.getSession()).data.session?.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          senderName: sender.email.split('@')[0], // Use email prefix as name
+          timelineName: timeline.name,
+          timelineId: timeline_id,
+          invitationType: permission_level === 'view' ? 'view' : 'collaborate'
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        return { data: null, error: { message: errorData.error || 'Failed to send invitation' } };
+      }
+
+      const result = await response.json();
+      return { data: { invitationToken: result.invitationToken }, error: null };
+
+    } catch (error) {
+      console.error('Timeline invitation error:', error);
+      return { data: null, error: { message: 'Failed to send timeline invitation' } };
+    }
   }
 
   async getTimelineInvitations(user_id: string) {
@@ -333,6 +392,91 @@ class SupabaseService {
       .eq('accepted', true);
 
     return { data, error };
+  }
+
+  // Timeline invitation methods (for email invitations)
+  async getPendingTimelineInvitations(user_email: string) {
+    const { data, error } = await this.client
+      .from('timeline_invitations')
+      .select(`
+        *,
+        timeline:timelines(name, type),
+        inviter:users!invited_by(email)
+      `)
+      .eq('invited_email', user_email)
+      .eq('status', 'pending')
+      .gt('expires_at', new Date().toISOString());
+
+    return { data, error };
+  }
+
+  async acceptTimelineEmailInvitation(invitation_token: string) {
+    // First, get the invitation details
+    const { data: invitation, error: fetchError } = await this.client
+      .from('timeline_invitations')
+      .select('*')
+      .eq('invitation_token', invitation_token)
+      .eq('status', 'pending')
+      .gt('expires_at', new Date().toISOString())
+      .single();
+
+    if (fetchError || !invitation) {
+      return { data: null, error: { message: 'Invalid or expired invitation' } };
+    }
+
+    // Get current user
+    const { data: { user } } = await this.client.auth.getUser();
+    if (!user) {
+      return { data: null, error: { message: 'Not authenticated' } };
+    }
+
+    // Check if user email matches invitation email
+    if (user.email !== invitation.invited_email) {
+      return { data: null, error: { message: 'This invitation is for a different email address' } };
+    }
+
+    // Create shared timeline entry
+    const permissionLevel = invitation.invitation_type === 'view' ? 'view' : 'edit';
+    const { data: share, error: shareError } = await this.client
+      .from('shared_timelines')
+      .insert([{
+        timeline_id: invitation.timeline_id,
+        user_id: user.id,
+        permission_level: permissionLevel,
+        invited_by: invitation.invited_by,
+        accepted: true
+      }])
+      .select()
+      .single();
+
+    if (shareError) {
+      return { data: null, error: shareError };
+    }
+
+    // Update invitation status
+    const { error: updateError } = await this.client
+      .from('timeline_invitations')
+      .update({
+        status: 'accepted',
+        accepted_at: new Date().toISOString()
+      })
+      .eq('id', invitation.id);
+
+    if (updateError) {
+      console.error('Failed to update invitation status:', updateError);
+      // Don't fail the whole operation for this
+    }
+
+    return { data: share, error: null };
+  }
+
+  async declineTimelineEmailInvitation(invitation_id: string) {
+    const { error } = await this.client
+      .from('timeline_invitations')
+      .update({ status: 'declined' })
+      .eq('id', invitation_id);
+
+    return { error };
   }
 }
 

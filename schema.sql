@@ -117,6 +117,7 @@ ALTER TABLE public.event_media ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.event_connections ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.event_mentions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.shared_timelines ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.timeline_invitations ENABLE ROW LEVEL SECURITY;
 
 -- Users policies
 CREATE POLICY "Users can view their own profile"
@@ -318,6 +319,26 @@ CREATE POLICY "Users can update connections for their events"
     event_id_2 IN (SELECT id FROM public.events WHERE auth.uid() = author_id)
   );
 
+-- Timeline invitations table (for email invitations to non-users)
+CREATE TABLE IF NOT EXISTS public.timeline_invitations (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  timeline_id UUID NOT NULL REFERENCES public.timelines(id) ON DELETE CASCADE,
+  invited_email TEXT NOT NULL,
+  invited_by UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  invitation_token TEXT NOT NULL UNIQUE,
+  invitation_type TEXT NOT NULL CHECK (invitation_type IN ('view', 'collaborate')),
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'declined', 'expired')),
+  expires_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() + INTERVAL '7 days'),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  accepted_at TIMESTAMP WITH TIME ZONE
+);
+
+-- Indexes for timeline invitations
+CREATE INDEX IF NOT EXISTS idx_timeline_invitations_email ON public.timeline_invitations(invited_email);
+CREATE INDEX IF NOT EXISTS idx_timeline_invitations_token ON public.timeline_invitations(invitation_token);
+CREATE INDEX IF NOT EXISTS idx_timeline_invitations_timeline ON public.timeline_invitations(timeline_id);
+CREATE INDEX IF NOT EXISTS idx_timeline_invitations_inviter ON public.timeline_invitations(invited_by);
+
 -- Shared timelines policies
 CREATE POLICY "Users can view shares for their timelines or shares they're part of"
   ON public.shared_timelines FOR SELECT
@@ -349,6 +370,39 @@ CREATE POLICY "Timeline owners and admins can delete shares"
 CREATE POLICY "Invited users can update their own share acceptance status"
   ON public.shared_timelines FOR UPDATE
   USING (user_id = auth.uid());
+
+-- Timeline invitations policies
+CREATE POLICY "Timeline owners can view invitations for their timelines"
+  ON public.timeline_invitations FOR SELECT
+  USING (
+    timeline_id IN (SELECT id FROM public.timelines WHERE owner_id = auth.uid())
+  );
+
+CREATE POLICY "Timeline owners can create invitations for their timelines"
+  ON public.timeline_invitations FOR INSERT
+  WITH CHECK (
+    timeline_id IN (SELECT id FROM public.timelines WHERE owner_id = auth.uid())
+  );
+
+CREATE POLICY "Timeline owners can update invitations for their timelines"
+  ON public.timeline_invitations FOR UPDATE
+  USING (
+    timeline_id IN (SELECT id FROM public.timelines WHERE owner_id = auth.uid())
+  );
+
+CREATE POLICY "Timeline owners can delete invitations for their timelines"
+  ON public.timeline_invitations FOR DELETE
+  USING (
+    timeline_id IN (SELECT id FROM public.timelines WHERE owner_id = auth.uid())
+  );
+
+CREATE POLICY "Users can view invitations sent to their email"
+  ON public.timeline_invitations FOR SELECT
+  USING (invited_email = (SELECT email FROM auth.users WHERE id = auth.uid()));
+
+CREATE POLICY "Users can update invitations sent to their email"
+  ON public.timeline_invitations FOR UPDATE
+  USING (invited_email = (SELECT email FROM auth.users WHERE id = auth.uid()));
 
 -- Function to auto-update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
