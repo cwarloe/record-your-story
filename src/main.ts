@@ -121,8 +121,8 @@ async function init() {
     await loadUserData();
     showApp();
   } else {
-    // If not logged in, show auth (invitations will be handled after login)
-    showAuth();
+    // Show landing page first for new visitors
+    showLandingPage();
   }
 
   // Listen for auth changes
@@ -149,7 +149,7 @@ async function init() {
       await loadUserData();
       showApp();
     } else {
-      showAuth();
+      showLandingPage();
     }
   });
 }
@@ -269,6 +269,241 @@ async function loadUserData() {
     console.error('Fatal error in loadUserData:', error);
     alert('Error loading your data. Please refresh the page.');
   }
+}
+
+// Show modern landing page
+function showLandingPage() {
+  const app = document.getElementById('app');
+  if (!app) return;
+
+  app.innerHTML = `
+    <div class="landing-page">
+      <!-- Navigation -->
+      <nav class="landing-nav">
+        <div class="nav-container">
+          <div class="nav-logo">
+            <span class="nav-icon">📖</span>
+            <span class="nav-title">Record Your Story</span>
+          </div>
+          <div class="nav-actions">
+            <button id="nav-signin" class="btn btn-ghost">Sign In</button>
+            <button id="nav-get-started" class="btn btn-primary">Get Started</button>
+          </div>
+        </div>
+      </nav>
+
+      <!-- Hero Section -->
+      <section class="hero-section">
+        <div class="hero-container">
+          <div class="hero-content">
+            <h1 class="hero-title">
+              Your Life's Story,<br>
+              <span class="hero-highlight">Beautifully Organized</span>
+            </h1>
+            <p class="hero-subtitle">
+              Transform your memories into a stunning timeline. Use AI to capture stories from voice,
+              documents, and photos. Share your legacy with family and friends.
+            </p>
+            <div class="hero-cta">
+              <button id="hero-cta-primary" class="btn btn-primary btn-lg">
+                Start Your Timeline
+              </button>
+              <button id="hero-cta-secondary" class="btn btn-secondary btn-lg">
+                Watch Demo
+              </button>
+            </div>
+            <div class="hero-stats">
+              <div class="stat">
+                <span class="stat-number">10K+</span>
+                <span class="stat-label">Stories Created</span>
+              </div>
+              <div class="stat">
+                <span class="stat-number">50K+</span>
+                <span class="stat-label">Memories Preserved</span>
+              </div>
+              <div class="stat">
+                <span class="stat-number">4.9★</span>
+                <span class="stat-label">User Rating</span>
+              </div>
+            </div>
+          </div>
+          <div class="hero-visual">
+            <div class="timeline-preview">
+              <div class="preview-card">
+                <div class="card-date">March 15, 2024</div>
+                <h3>Graduation Day</h3>
+                <p>Today was the culmination of four years of hard work...</p>
+                <div class="card-tags">
+                  <span class="tag">🎓 Milestone</span>
+                  <span class="tag">👨‍👩‍👧 Family</span>
+                </div>
+              </div>
+              <div class="preview-card">
+                <div class="card-date">December 25, 2023</div>
+                <h3>Christmas Morning</h3>
+                <p>The kids' faces lit up when they saw the tree...</p>
+                <div class="card-tags">
+                  <span class="tag">🎄 Holiday</span>
+                  <span class="tag">👨‍👩‍👧 Family</span>
+                </div>
+              </div>
+              <div class="preview-card">
+                <div class="card-date">July 4, 2023</div>
+                <h3>Independence Day</h3>
+                <p>Fireworks over the lake, perfect summer evening...</p>
+                <div class="card-tags">
+                  <span class="tag">🎆 Celebration</span>
+                  <span class="tag">🏖️ Vacation</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Features Section -->
+      <section class="features-section">
+        <div class="container">
+          <div class="section-header">
+            <h2>Everything You Need to Preserve Your Story</h2>
+            <p>Powerful AI features make capturing and organizing your memories effortless</p>
+          </div>
+
+          <div class="features-grid">
+            <div class="feature-card">
+              <div class="feature-icon">🎤</div>
+              <h3>Voice-to-Story</h3>
+              <p>Speak naturally and let AI transform your words into beautifully written events. No typing required.</p>
+            </div>
+
+            <div class="feature-card">
+              <div class="feature-icon">📄</div>
+              <h3>Document Import</h3>
+              <p>Upload journals, letters, or notes. AI automatically extracts and organizes your life events.</p>
+            </div>
+
+            <div class="feature-card">
+              <div class="feature-icon">📷</div>
+              <h3>Photo Integration</h3>
+              <p>Import memories directly from Google Photos with automatic event creation and metadata extraction.</p>
+            </div>
+
+            <div class="feature-card">
+              <div class="feature-icon">👥</div>
+              <h3>Family Collaboration</h3>
+              <p>Share timelines with family members. Everyone can contribute their perspective to your shared story.</p>
+            </div>
+
+            <div class="feature-card">
+              <div class="feature-icon">🤖</div>
+              <h3>AI Enhancement</h3>
+              <p>Get writing suggestions, auto-tagging, and smart connections between related events.</p>
+            </div>
+
+            <div class="feature-card">
+              <div class="feature-icon">📊</div>
+              <h3>Timeline Summary</h3>
+              <p>AI generates narrative summaries of your life, highlighting key themes and milestones.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Social Proof -->
+      <section class="testimonials-section">
+        <div class="container">
+          <div class="section-header">
+            <h2>Loved by Families Worldwide</h2>
+          </div>
+
+          <div class="testimonials-grid">
+            <div class="testimonial-card">
+              <div class="testimonial-content">
+                "Record Your Story helped us preserve our family history in a way that brings tears to our eyes. The AI features made it so easy to capture stories we thought we'd forgotten."
+              </div>
+              <div class="testimonial-author">
+                <div class="author-avatar">👩‍👧‍👦</div>
+                <div class="author-info">
+                  <div class="author-name">Sarah Johnson</div>
+                  <div class="author-title">Family Historian</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="testimonial-card">
+              <div class="testimonial-content">
+                "The voice recording feature is incredible. I can just speak my memories and the AI turns them into beautiful, well-written stories. It's like having a personal biographer."
+              </div>
+              <div class="testimonial-author">
+                <div class="author-avatar">👴</div>
+                <div class="author-info">
+                  <div class="author-name">Robert Chen</div>
+                  <div class="author-title">Retired Teacher</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="testimonial-card">
+              <div class="testimonial-content">
+                "Sharing our timeline with the kids has brought our family closer. They love reading about their childhood and learning about our history."
+              </div>
+              <div class="testimonial-author">
+                <div class="author-avatar">👨‍👩‍👧‍👦</div>
+                <div class="author-info">
+                  <div class="author-name">Maria & David Rodriguez</div>
+                  <div class="author-title">Parents of 3</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CTA Section -->
+      <section class="cta-section">
+        <div class="container">
+          <div class="cta-content">
+            <h2>Ready to Start Your Story?</h2>
+            <p>Join thousands of families preserving their most precious memories</p>
+            <button id="final-cta" class="btn btn-primary btn-lg">
+              Create Your Timeline Free
+            </button>
+            <p class="cta-note">No credit card required • Free forever plan available</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Footer -->
+      <footer class="landing-footer">
+        <div class="container">
+          <div class="footer-content">
+            <div class="footer-logo">
+              <span class="nav-icon">📖</span>
+              <span class="nav-title">Record Your Story</span>
+            </div>
+            <div class="footer-links">
+              <a href="#privacy">Privacy</a>
+              <a href="#terms">Terms</a>
+              <a href="#support">Support</a>
+            </div>
+            <div class="footer-copyright">
+              © 2024 Record Your Story. All rights reserved.
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  `;
+
+  // Event listeners
+  document.getElementById('nav-signin')?.addEventListener('click', showAuth);
+  document.getElementById('nav-get-started')?.addEventListener('click', showAuth);
+  document.getElementById('hero-cta-primary')?.addEventListener('click', showAuth);
+  document.getElementById('hero-cta-secondary')?.addEventListener('click', () => {
+    // Placeholder for demo video
+    alert('Demo video coming soon!');
+  });
+  document.getElementById('final-cta')?.addEventListener('click', showAuth);
 }
 
 // Show authentication UI
