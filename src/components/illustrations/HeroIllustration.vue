@@ -1,0 +1,104 @@
+<template>
+  <div class="hero-illustration" role="img" :aria-label="ariaLabel">
+    <svg viewBox="0 0 600 400" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="timelineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" style="stop-color:#6366f1"/>
+          <stop offset="100%" style="stop-color:#06b6d4"/>
+        </linearGradient>
+        <linearGradient id="orbGradient1" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:#e0e7ff"/>
+          <stop offset="100%" style="stop-color:#c7d2fe"/>
+        </linearGradient>
+        <linearGradient id="orbGradient2" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:#cffafe"/>
+          <stop offset="100%" style="stop-color:#a5f3fc"/>
+        </linearGradient>
+        <linearGradient id="orbGradient3" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:#fef3c7"/>
+          <stop offset="100%" style="stop-color:#fde68a"/>
+        </linearGradient>
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+          <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+
+      <!-- Background geometric shapes -->
+      <circle cx="100" cy="150" r="40" fill="#f0f9ff" opacity="0.3"/>
+      <circle cx="500" cy="250" r="60" fill="#fef3c7" opacity="0.2"/>
+      <rect x="450" y="100" width="80" height="80" rx="8" fill="#e0e7ff" opacity="0.4" transform="rotate(15 490 140)"/>
+
+      <!-- Timeline path -->
+      <path d="M50,200 Q150,150 250,200 T450,200 T550,250" stroke="url(#timelineGradient)" stroke-width="4" fill="none" class="timeline-path" filter="url(#glow)"/>
+
+      <!-- Memory orbs -->
+      <circle cx="150" cy="150" r="25" fill="url(#orbGradient1)" stroke="#6366f1" stroke-width="2" class="memory-orb"/>
+      <circle cx="250" cy="200" r="25" fill="url(#orbGradient2)" stroke="#06b6d4" stroke-width="2" class="memory-orb"/>
+      <circle cx="350" cy="180" r="25" fill="url(#orbGradient3)" stroke="#f59e0b" stroke-width="2" class="memory-orb"/>
+      <circle cx="450" cy="220" r="25" fill="url(#orbGradient1)" stroke="#6366f1" stroke-width="2" class="memory-orb"/>
+      <circle cx="550" cy="250" r="25" fill="url(#orbGradient2)" stroke="#06b6d4" stroke-width="2" class="memory-orb"/>
+
+      <!-- Memory icons inside orbs -->
+      <g class="memory-icons">
+        <!-- Photo icon -->
+        <rect x="140" y="142" width="6" height="6" rx="1" fill="#6366f1" opacity="0.8"/>
+        <circle cx="143" cy="145" r="1" fill="#06b6d4"/>
+
+        <!-- Calendar icon -->
+        <rect x="240" y="192" width="6" height="6" rx="1" fill="#06b6d4" opacity="0.8"/>
+        <line x1="243" y1="195" x2="243" y2="197" stroke="#06b6d4" stroke-width="0.5"/>
+
+        <!-- Heart icon -->
+        <path d="M353,185 Q355,183 357,185 Q359,183 359,185 Q359,187 357,189 Q355,191 353,189 Q351,191 351,189 Q351,187 353,185" fill="#f59e0b" opacity="0.8"/>
+
+        <!-- Star icon -->
+        <path d="M453,215 L455,218 L458,218 L456,220 L457,223 L453,221 L449,223 L450,220 L448,218 L451,218 Z" fill="#6366f1" opacity="0.8"/>
+
+        <!-- Music note -->
+        <path d="M553,245 Q555,243 555,245 Q555,247 553,247 Q551,247 551,245 Q551,243 553,245 M551,247 L551,252 M555,247 L555,252" fill="#06b6d4" opacity="0.8"/>
+      </g>
+
+      <!-- AI enhancement patterns -->
+      <g class="ai-patterns" opacity="0.1">
+        <circle cx="200" cy="120" r="2" fill="#6366f1"/>
+        <circle cx="300" cy="160" r="2" fill="#06b6d4"/>
+        <circle cx="400" cy="140" r="2" fill="#f59e0b"/>
+        <circle cx="480" cy="180" r="2" fill="#6366f1"/>
+        <path d="M180,130 L220,130 M200,110 L200,150" stroke="#6366f1" stroke-width="0.5"/>
+        <path d="M280,140 L320,140 M300,120 L300,160" stroke="#06b6d4" stroke-width="0.5"/>
+        <path d="M380,120 L420,120 M400,100 L400,140" stroke="#f59e0b" stroke-width="0.5"/>
+      </g>
+    </svg>
+  </div>
+</template>
+
+<script setup lang="ts">
+interface Props {
+  ariaLabel?: string
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  ariaLabel: 'Interactive timeline visualization showing memory connections'
+})
+</script>
+
+<style scoped>
+.hero-illustration {
+  width: 100%;
+  max-width: 600px;
+  height: auto;
+  margin: 0 auto;
+}
+
+.hero-illustration svg {
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 10px 30px rgba(99, 102, 241, 0.2));
+}
+
+/* Animation classes are defined globally in style.css */
+</style>

@@ -328,34 +328,8 @@ function showLandingPage() {
             </div>
           </div>
           <div class="hero-visual">
-            <div class="timeline-preview">
-              <div class="preview-card">
-                <div class="card-date">March 15, 2024</div>
-                <h3>Graduation Day</h3>
-                <p>Today was the culmination of four years of hard work...</p>
-                <div class="card-tags">
-                  <span class="tag">🎓 Milestone</span>
-                  <span class="tag">👨‍👩‍👧 Family</span>
-                </div>
-              </div>
-              <div class="preview-card">
-                <div class="card-date">December 25, 2023</div>
-                <h3>Christmas Morning</h3>
-                <p>The kids' faces lit up when they saw the tree...</p>
-                <div class="card-tags">
-                  <span class="tag">🎄 Holiday</span>
-                  <span class="tag">👨‍👩‍👧 Family</span>
-                </div>
-              </div>
-              <div class="preview-card">
-                <div class="card-date">July 4, 2023</div>
-                <h3>Independence Day</h3>
-                <p>Fireworks over the lake, perfect summer evening...</p>
-                <div class="card-tags">
-                  <span class="tag">🎆 Celebration</span>
-                  <span class="tag">🏖️ Vacation</span>
-                </div>
-              </div>
+            <div class="hero-illustration">
+              <img src="/illustrations/hero-timeline.svg" alt="Interactive timeline visualization showing memory connections" />
             </div>
           </div>
         </div>
@@ -582,7 +556,10 @@ function showApp() {
           <div class="header-actions">
             <button id="undo-btn" class="btn btn-secondary btn-small" title="Undo (Ctrl+Z)" disabled style="opacity: 0.5;">↶ Undo</button>
             <button id="redo-btn" class="btn btn-secondary btn-small" title="Redo (Ctrl+Y)" disabled style="opacity: 0.5;">↷ Redo</button>
-            <button id="export-pdf-btn" class="btn btn-secondary btn-small" title="Export to PDF">📄 Export PDF</button>
+            <button id="export-pdf-btn" class="btn btn-secondary btn-small" title="Export to PDF">
+              <img src="/icons/export-timeline.svg" alt="Export" class="icon icon-sm" />
+              Export PDF
+            </button>
             ${((window as any).pendingTimelineInvitations || []).length > 0 ? `<button id="pending-invitations-btn" class="btn btn-primary btn-small" title="Pending Timeline Invitations">📩 ${((window as any).pendingTimelineInvitations || []).length}</button>` : ''}
             <button id="theme-toggle" class="theme-toggle">🌙</button>
             <span class="user-email">${currentUser?.email || 'User'}</span>
@@ -596,14 +573,26 @@ function showApp() {
           <div class="timeline-actions">
             ${claude.isEnabled() ? '<button id="ai-summarize-btn" class="btn btn-secondary btn-small" title="AI Timeline Summary">🤖 Summarize</button>' : ''}
             ${claude.isEnabled() ? '<button id="import-journal-btn" class="btn btn-secondary btn-small" title="Import Journal/Documents">📝 Import Journal</button>' : ''}
-            <button id="import-google-photos-btn" class="btn btn-secondary btn-small" title="Import from Google Photos">📷 Import Photos</button>
-            <button id="share-timeline-btn" class="btn btn-secondary btn-small" title="Share Timeline">👥 Share</button>
-            <button id="add-event-btn" class="btn btn-primary">+ Add Event</button>
+            <button id="import-google-photos-btn" class="btn btn-secondary btn-small" title="Import from Google Photos">
+              <img src="/icons/photo-upload.svg" alt="Import Photos" class="icon icon-sm" />
+              Import Photos
+            </button>
+            <button id="share-timeline-btn" class="btn btn-secondary btn-small" title="Share Timeline">
+              <img src="/icons/share-timeline.svg" alt="Share" class="icon icon-sm" />
+              Share
+            </button>
+            <button id="add-event-btn" class="btn btn-primary">
+              <img src="/icons/add-memory.svg" alt="Add" class="icon icon-sm" />
+              Add Event
+            </button>
           </div>
         </div>
 
         <div class="search-filter-bar">
-          <input type="text" id="search-input" placeholder="🔍 Search events..." value="${searchQuery}" />
+          <div style="position: relative;">
+            <img src="/icons/search-memories.svg" alt="Search" class="icon icon-sm" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); pointer-events: none;" />
+            <input type="text" id="search-input" placeholder="Search events..." value="${searchQuery}" style="padding-left: 40px;" />
+          </div>
           <input type="date" id="date-from" placeholder="From" value="${filterDateFrom}" />
           <input type="date" id="date-to" placeholder="To" value="${filterDateTo}" />
           <button id="clear-filters" class="btn btn-secondary btn-small">Clear Filters</button>
@@ -611,7 +600,17 @@ function showApp() {
 
         <div id="timeline" class="timeline">
           ${events.length === 0
-            ? '<p class="empty-state">No events yet. Click "Add Event" to record your first story!</p>'
+            ? `
+              <div class="empty-state">
+                <img src="/illustrations/empty-timeline.svg" alt="Empty timeline illustration" />
+                <h3>Start Your Memory Journey</h3>
+                <p>Your timeline is waiting for your first story. Every memory matters.</p>
+                <button id="empty-add-event-btn" class="btn btn-primary">
+                  <img src="/icons/add-memory.svg" alt="Add" class="icon icon-sm" />
+                  Add Your First Memory
+                </button>
+              </div>
+            `
             : renderTimeline()
           }
         </div>
@@ -871,7 +870,17 @@ function renderTimeline(): string {
   const filteredEvents = getFilteredEvents();
 
   if (filteredEvents.length === 0) {
-    return '<p class="empty-state">No events match your filters. Try adjusting your search.</p>';
+    return `
+      <div class="empty-state">
+        <img src="/illustrations/empty-search.svg" alt="No search results illustration" />
+        <h3>No Memories Found</h3>
+        <p>No events match your current filters. Try different keywords or adjust your date range.</p>
+        <button id="clear-search-filters-btn" class="btn btn-secondary">
+          <img src="/icons/filter-memories.svg" alt="Clear filters" class="icon icon-sm" />
+          Clear Filters
+        </button>
+      </div>
+    `;
   }
 
   // Sort events by date (newest first)
@@ -922,8 +931,12 @@ function renderTimeline(): string {
               : ''
             }
             <div class="event-actions">
-              <button class="btn-icon edit-btn" data-id="${event.id}" title="Edit">✏️</button>
-              <button class="btn-icon delete-btn" data-id="${event.id}" title="Delete">🗑️</button>
+              <button class="btn-icon edit-btn" data-id="${event.id}" title="Edit" aria-label="Edit event">
+                <img src="/icons/edit-memory.svg" alt="Edit" class="icon icon-sm" />
+              </button>
+              <button class="btn-icon delete-btn" data-id="${event.id}" title="Delete" aria-label="Delete event">
+                <img src="/icons/delete-memory.svg" alt="Delete" class="icon icon-sm" />
+              </button>
             </div>
           </div>
         </div>
@@ -2158,7 +2171,17 @@ function refreshTimeline() {
   const timeline = document.getElementById('timeline');
   if (timeline) {
     timeline.innerHTML = events.length === 0
-      ? '<p class="empty-state">No events yet. Click "Add Event" to record your first story!</p>'
+      ? `
+        <div class="empty-state">
+          <img src="/illustrations/empty-timeline.svg" alt="Empty timeline illustration" />
+          <h3>Start Your Memory Journey</h3>
+          <p>Your timeline is waiting for your first story. Every memory matters.</p>
+          <button id="empty-add-event-btn" class="btn btn-primary">
+            <img src="/icons/add-memory.svg" alt="Add" class="icon icon-sm" />
+            Add Your First Memory
+          </button>
+        </div>
+      `
       : renderTimeline();
 
     // Re-attach all event listeners

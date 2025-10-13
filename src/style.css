@@ -1594,6 +1594,51 @@ kbd {
   outline-offset: 2px;
 }
 
+/* Enhanced accessibility for illustrations */
+.illustration {
+  role: img;
+}
+
+.icon {
+  role: img;
+}
+
+/* Screen reader only text */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .hero-illustration svg {
+    filter: contrast(1.2);
+  }
+
+  .icon {
+    stroke-width: 3px;
+  }
+}
+
+/* Reduced motion for illustrations */
+@media (prefers-reduced-motion: reduce) {
+  .timeline-path,
+  .memory-orb,
+  .memory-icons,
+  .onboarding-step-1 svg,
+  .onboarding-step-2 svg,
+  .onboarding-step-3 svg {
+    animation: none;
+  }
+}
+
 /* Reduced motion for accessibility */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -2508,4 +2553,176 @@ kbd {
   .auth-card h1 {
     font-size: var(--font-size-3xl);
   }
+/* Illustration Styles and Animations */
+
+/* Hero Illustration Integration */
+.hero-illustration {
+  width: 100%;
+  max-width: 600px;
+  height: auto;
+  margin: 0 auto;
+}
+
+.hero-illustration svg {
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 10px 30px rgba(99, 102, 241, 0.2));
+}
+
+/* Illustration Animations */
+.timeline-path {
+  stroke-dasharray: 0, 1000;
+  animation: draw-timeline 2s ease-in-out forwards;
+}
+
+@keyframes draw-timeline {
+  from {
+    stroke-dasharray: 0, 1000;
+  }
+  to {
+    stroke-dasharray: 1000, 0;
+  }
+}
+
+.memory-orb {
+  animation: orb-appear 1.5s ease-out forwards;
+  opacity: 0;
+}
+
+.memory-orb:nth-child(1) { animation-delay: 0.5s; }
+.memory-orb:nth-child(2) { animation-delay: 0.7s; }
+.memory-orb:nth-child(3) { animation-delay: 0.9s; }
+.memory-orb:nth-child(4) { animation-delay: 1.1s; }
+.memory-orb:nth-child(5) { animation-delay: 1.3s; }
+
+@keyframes orb-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.memory-icons {
+  animation: icons-fade-in 2s ease-out 1.5s forwards;
+  opacity: 0;
+}
+
+@keyframes icons-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Icon System CSS */
+.icon {
+  width: 24px;
+  height: 24px;
+  stroke: var(--color-primary);
+  transition: stroke var(--transition-fast);
+}
+
+.icon:hover {
+  stroke: var(--color-primary-hover);
+}
+
+.icon-secondary {
+  stroke: var(--color-secondary);
+}
+
+.icon-accent {
+  stroke: var(--color-accent);
+}
+
+/* Empty State Styling */
+.empty-state {
+  text-align: center;
+  padding: var(--space-8);
+  color: var(--color-on-surface-secondary);
+}
+
+.empty-state svg {
+  width: 200px;
+  height: auto;
+  margin-bottom: var(--space-4);
+  opacity: 0.6;
+}
+
+.empty-state h3 {
+  color: var(--color-on-surface);
+  margin-bottom: var(--space-2);
+}
+
+/* Onboarding Illustration Animations */
+.onboarding-step-1 svg {
+  animation: welcome-pulse 2s ease-in-out infinite;
+}
+
+@keyframes welcome-pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.onboarding-step-2 svg {
+  animation: timeline-draw 3s ease-in-out;
+}
+
+@keyframes timeline-draw {
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.onboarding-step-3 svg {
+  animation: branching-grow 4s ease-out;
+}
+
+@keyframes branching-grow {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Responsive Illustrations */
+@media (max-width: 768px) {
+  .hero-illustration {
+    max-width: 400px;
+  }
+
+  .empty-state svg {
+    width: 150px;
+  }
+
+  .onboarding-step-1 svg,
+  .onboarding-step-2 svg,
+  .onboarding-step-3 svg {
+    width: 250px;
+    height: auto;
+  }
+}
 }

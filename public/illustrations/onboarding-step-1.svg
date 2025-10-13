@@ -1,0 +1,24 @@
+<svg viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="welcomeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#6366f1"/>
+      <stop offset="100%" style="stop-color:#06b6d4"/>
+    </linearGradient>
+    <linearGradient id="orbGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#e0e7ff"/>
+      <stop offset="100%" style="stop-color:#c7d2fe"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Glowing orb -->
+  <circle cx="150" cy="100" r="30" fill="url(#orbGlow)" stroke="url(#welcomeGradient)" stroke-width="3" opacity="0.8"/>
+  <circle cx="150" cy="100" r="15" fill="#f59e0b" opacity="0.6"/>
+
+  <!-- Emerging timeline thread -->
+  <path d="M150 100 Q180 80 210 100" stroke="url(#welcomeGradient)" stroke-width="3" fill="none" opacity="0.7"/>
+  <circle cx="210" cy="100" r="4" fill="#06b6d4" opacity="0.8"/>
+
+  <!-- Subtle background elements -->
+  <circle cx="80" cy="60" r="8" fill="#fef3c7" opacity="0.4"/>
+  <circle cx="220" cy="140" r="6" fill="#e0e7ff" opacity="0.5"/>
+</svg>

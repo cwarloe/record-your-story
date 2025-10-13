@@ -4,7 +4,7 @@ import { supabase } from './supabase'
 // Google OAuth2 configuration
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
 const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/photoslibrary.readonly'
-const GOOGLE_REDIRECT_URI = `${window.location.origin}/google-callback`
+const GOOGLE_REDIRECT_URI = `${window.location.origin}/google-callback.html`
 
 class GooglePhotosService {
   private accessToken: string | null = null
@@ -53,13 +53,13 @@ class GooglePhotosService {
       const messageHandler = (event: MessageEvent) => {
         if (event.origin !== window.location.origin) return
 
-        if (event.data.type === 'google-oauth-success') {
+        if (event.data.type === 'google_photos_auth_success') {
           this.accessToken = event.data.accessToken
           window.removeEventListener('message', messageHandler)
           clearInterval(checkClosed)
           popup?.close()
           resolve()
-        } else if (event.data.type === 'google-oauth-error') {
+        } else if (event.data.type === 'google_oauth_error') {
           window.removeEventListener('message', messageHandler)
           clearInterval(checkClosed)
           popup?.close()
