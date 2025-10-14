@@ -54,14 +54,12 @@
   </div>
 
   <script>
-    // Parse OAuth response from URL fragment
+    // Parse OAuth response from URL query parameters (authorization code flow)
     function parseOAuthResponse() {
-      const hash = window.location.hash.substring(1)
-      const params = new URLSearchParams(hash)
-
-      const accessToken = params.get('access_token')
-      const error = params.get('error')
-      const state = params.get('state')
+      const urlParams = new URLSearchParams(window.location.search)
+      const code = urlParams.get('code')
+      const error = urlParams.get('error')
+      const state = urlParams.get('state')
 
       // Verify state matches (supports both Photos and Drive)
       const validStates = ['google-photos-import', 'google_drive_import']
@@ -85,16 +83,14 @@
         }
       }
 
-      if (!accessToken) {
+      if (!code) {
         return {
-          error: 'No access token received',
+          error: 'No authorization code received',
         }
       }
 
       return {
-        accessToken,
-        expiresIn: parseInt(params.get('expires_in') || '3600'),
-        tokenType: params.get('token_type') || 'Bearer',
+        code,
         state,
       }
     }
@@ -130,15 +126,14 @@
         }, 3000)
 
       } else {
-        // Success - send token to parent with appropriate event type
+        // Success - send authorization code to parent with appropriate event type
         const messageType = result.state === 'google_drive_import'
           ? 'google_drive_auth_success'
-          : 'google-oauth-success'
+          : 'google_photos_auth_success'
 
         sendMessageToParent({
           type: messageType,
-          accessToken: result.accessToken,
-          expiresIn: result.expiresIn,
+          code: result.code,
           state: result.state,
         })
 
