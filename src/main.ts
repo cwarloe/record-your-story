@@ -3046,9 +3046,11 @@ async function showDocumentImportModal() {
       tabDrive!.style.color = '#6c5b7b';
 
       // Check if already authenticated
-      if (googleDrive.isAuthenticated()) {
-        showDriveFiles();
-      }
+      googleDrive.isAuthenticated().then((authenticated) => {
+        if (authenticated) {
+          showDriveFiles();
+        }
+      });
     }
   }
 
